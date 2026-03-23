@@ -1,0 +1,12 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "strict_param": false,
+        "array_syntax": {
+            "syntax": "short"
+        },
+        "declare_strict_types": true,
+        "comment_to_phpdoc": true
+    },
+    "exclude": ["vendor", "storage", "node_modules", "bootstrap/cache"]
+}
