@@ -72,8 +72,23 @@ class TelegramBotService
         $data = $callbackQuery->getData();
 
         switch ($data) {
-            case 'post_ad':
+            case 'post_adv':
                 $this->sendPostMessage($chatId, $message_id);
+                break;
+            case 'category_car':
+                $this->sendCategoryCarMessage($chatId, $message_id);
+                break;
+            case 'category_detail':
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => 'category_detail',
+                ]);
+                break;
+            case 'search_adv':
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => 'search_adv',
+                ]);
                 break;
             case 'back_main_menu':
                 $this->sendWelcomeMessage($chatId, $username, $message_id, false);
@@ -101,11 +116,11 @@ class TelegramBotService
             [
                 [
                     'text' => 'Подать объявление',
-                    'callback_data' => 'post_ad',
+                    'callback_data' => 'post_adv',
                 ],
                 [
                     'text' => 'Найти объявление',
-                    'callback_data' => 'search_ad',
+                    'callback_data' => 'search_adv',
                 ],
             ],
             [
@@ -179,5 +194,33 @@ class TelegramBotService
             'parse_mode' => 'HTML',
             'reply_markup' => json_encode($reply_markup),
         ]);
+    }
+
+    // Отправка сообщения о выборе категории транспорт
+    private function sendCategoryCarMessage(int $chatId, int $message_id): void
+    {
+        $text = '❗❔ <b>Марка и модель авто</b>
+
+Укажите марку и модель вашего авто.
+
+<i>Например Audi RS7 \ Mercedes C180 \ BMW 3 \ Chevrolet Niva \ Ford Focus \ Hyundai Solaris \ Volkswagen Golf \ ВАЗ 2114</i>';
+
+        $this->telegram->editMessageText([
+            'chat_id' => $chatId,
+            'message_id' => $message_id,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+        ]);
+
+        $stage = 'post_adv_category_car_step1';
+        $adv_category = 'Транспорт';
+
+        $user = BotUsers::where('chat_id', $chatId)->first();
+        $user->update(['stage' => $stage]);
+        $user->tempAdv()->updateOrCreate(
+            ['id_bot_user' => $user->id], // условие поиска
+            ['adv_category' => $adv_category] // данные для обновления/создания
+        );
+
     }
 }

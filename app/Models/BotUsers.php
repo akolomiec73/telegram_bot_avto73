@@ -12,4 +12,9 @@ class BotUsers extends Model
 
     // Поля для массового присваивания
     protected $fillable = ['chat_id', 'username', 'stage'];
+
+    public function tempAdv()
+    {
+        return $this->hasOne(TempAdvUser::class, 'id_bot_user', 'id');
+    }
 }
