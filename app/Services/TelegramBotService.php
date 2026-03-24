@@ -77,11 +77,7 @@ class TelegramBotService
                     ['adv_car_mark' => $mark]
                 );
 
-                $text = '🕑 <b>Год выпуска</b>
-
-Укажите год выпуска авто.
-
-<i>Например: 2016</i>';
+                $text = TextMessagesService::getCarYearMessage();
                 $this->telegram->sendMessage([
                     'chat_id' => $chatId,
                     'text' => $text,
@@ -99,18 +95,14 @@ class TelegramBotService
                         ['id_bot_user' => $user->id],
                         ['adv_car_year_realise' => $text]
                     );
-                    $text = '💲 <b>Цена</b>
-
-Укажите цену.';
+                    $text = TextMessagesService::getPriceMessage();
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
                         'text' => $text,
                         'parse_mode' => 'HTML',
                     ]);
                 } else {
-                    $text = 'Укажите корректный год выпуска авто.
-
-<i>Например: 2016</i>';
+                    $text = TextMessagesService::getCorrectCarYearMessage();
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
                         'text' => $text,
@@ -128,20 +120,14 @@ class TelegramBotService
                         ['id_bot_user' => $user->id],
                         ['adv_price' => $text]
                     );
-                    $text = '📝 <b>Описание</b>
-
-Укажите описание объявления.
-
-<b>ВАЖНО! Запрещено добавлять любые контакты, хештеги и ссылки, иначе объявление может быть удалено!</b>';
+                    $text = TextMessagesService::getDescriptionMessage();
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
                         'text' => $text,
                         'parse_mode' => 'HTML',
                     ]);
                 } else {
-                    $text = 'Введите цену в российских рублях.
-
-<i>Например: 150000</i>';
+                    $text = TextMessagesService::getCorrectPriceMessage();
                     $this->telegram->sendMessage([
                         'chat_id' => $chatId,
                         'text' => $text,
@@ -158,11 +144,7 @@ class TelegramBotService
                     ['id_bot_user' => $user->id],
                     ['adv_description' => $text]
                 );
-                $text = '📷 <b>Фото</b>
-
-Добавьте <b>одно</b> фото.
-
-<i>Остальные фотографии можно прикрепить в комментариях</i>';
+                $text = TextMessagesService::getPhotoMessage();
                 $this->telegram->sendMessage([
                     'chat_id' => $chatId,
                     'text' => $text,
@@ -180,9 +162,7 @@ class TelegramBotService
                     $min_around = abs(round($diff / 60));
 
                     if ($min_around < 1) {// 960
-                        $text = 'Публиковать обьявление можно раз <b>в 12 часов</b>
-
-Повторите попытку через <b>'.(960 - $min_around).'</b> минут.';
+                        $text = TextMessagesService::getTimeLimitMessage($min_around);
                         $this->telegram->sendMessage([
                             'chat_id' => $chatId,
                             'text' => $text,
@@ -209,14 +189,7 @@ class TelegramBotService
 
                             $user->update(['stage' => $stage]);
 
-                            $text = '❗️ Контакты
-
-❗️У вас скрытый никнейм, вам не смогут написать.
-Перед подачей объявления - измените настройки приватности в Телеграме: Конфидициальность, Перессылка сообщений, Для всех!
-
-Или укажите дополнительные контакты
-
-<i>Например: телефон 8-902-210-99-99</i>';
+                            $text = TextMessagesService::getContactMessage();
                             $this->telegram->sendMessage([
                                 'chat_id' => $chatId,
                                 'text' => $text,
@@ -224,16 +197,7 @@ class TelegramBotService
                             ]);
                         } else {
                             $temp_adv_row = $user->tempAdv()->first();
-                            $text_adv = "<i>$temp_adv_row->adv_category > $temp_adv_row->adv_car_mark > </i>
-
-<b>$temp_adv_row->adv_car_mark, $temp_adv_row->adv_car_year_realise г.</b>
-
-💲 <b>number_format($temp_adv_row->adv_price, 0, ',', ' ') руб.</b>
-
-$temp_adv_row->adv_description
-
-Продавец: @$username
-";
+                            $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $username);
                             $this->telegram->sendMessage([// предпросмотр для теста
                                 'chat_id' => $chatId,
                                 'text' => $text_adv,
@@ -250,9 +214,7 @@ $temp_adv_row->adv_description
                              * тут логика отправки пользователям по фильтрам
                              * $bot->sendPhoto($users_arr[$i]['id_user'], $res_query['add_photo'], $text_add,null,null,false, 'HTML');
                              */
-                            $text = '👍 <b>Публикация</b>
-
-    Объявление успешно опубликовано в канале @avto73ru';
+                            $text = TextMessagesService::getFinishMessage();
                             $keyboard = [
                                 [
                                     [
@@ -326,14 +288,7 @@ $temp_adv_row->adv_description
     // Отправка приветственного сообщения
     private function sendWelcomeMessage(int $chatId, string $username, int $message_id, bool $isFirstMessage): void
     {
-        $text = '🚗 <b>Главное меню</b>
-
-Авто Барахолка Ульяновск | <b>avto73ru</b>
-
-Город: <b>Ульяновск</b>
-Канал: @avto73ru
-
-Главная наша цель - создание удобной платформы для продажи и покупки б\у авто и запчастей в г.Ульяновск.';
+        $text = TextMessagesService::getStartMessage();
         $keyboard = [
             [
                 [
@@ -382,11 +337,7 @@ $temp_adv_row->adv_description
     // Отправка сообщения о подаче объявления
     private function sendPostMessage(int $chatId, int $message_id): void
     {
-        $text = '❗️ Перед подачей объявления - измените настройки приватности в Телеграме: Конфидициальность, Перессылка сообщений, Для всех! Иначе вам не смогут написать❗️
-
-🚦 <b>Категория</b>
-
-Выберите категорию объявления из представленных.';
+        $text = TextMessagesService::getPostMessage();
         $keyboard = [
             [
                 [
@@ -421,11 +372,7 @@ $temp_adv_row->adv_description
     // Отправка сообщения о выборе категории транспорт
     private function sendCategoryCarMessage(int $chatId, int $message_id): void
     {
-        $text = '❗❔ <b>Марка и модель авто</b>
-
-Укажите марку и модель вашего авто.
-
-<i>Например Audi RS7 \ Mercedes C180 \ BMW 3 \ Chevrolet Niva \ Ford Focus \ Hyundai Solaris \ Volkswagen Golf \ ВАЗ 2114</i>';
+        $text = TextMessagesService::getCategoryCarMessage();
 
         $this->telegram->editMessageText([
             'chat_id' => $chatId,
