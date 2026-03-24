@@ -2,7 +2,7 @@
 <project version="4">
   <component name="LaravelPint">
     <laravel_pint_settings>
-      <laravel_pint_by_interpreter asDefaultInterpreter="true" interpreter_id="6830ef72-2912-4717-89b7-067c8324e5bc">
+      <laravel_pint_by_interpreter asDefaultInterpreter="true" interpreter_id="6830ef72-2912-4717-89b7-067c8324e5bc" tool_path="$PROJECT_DIR$/app/vendor/bin/pint">
         <option name="timeout" value="30000" />
       </laravel_pint_by_interpreter>
       <LaravelPintConfiguration tool_path="$PROJECT_DIR$/app/vendor/bin/pint" />
