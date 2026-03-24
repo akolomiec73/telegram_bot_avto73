@@ -29,16 +29,20 @@ class TelegramBotService
         $text = $message->getText();  // Текст сообщения
         $message_id = $message->getMessageId(); // id message для изменений
         $username = $message->getChat()->getUsername(); // ник пользователя
+        $photo = $message->getPhoto();
 
         // Определяем тип сообщения и вызываем соответствующий обработчик
-        if (str_starts_with($text, '/')) {  // Если сообщение — команда (начинается с /)
-            $this->handleCommand($chatId, $text, $username, $message_id);
-        } elseif ($callbackQuery) {  // обработка нажатий кнопок
-            $this->handleCallback($chatId, $text, $username, $callbackQuery, $message_id);
-        } else {  // Иначе — обычный текст
+        if ($photo) { // костыль для орбаботки фото, надо исправить
             $this->handleText($chatId, $text);
+        } else {
+            if (str_starts_with($text, '/')) {  // Если сообщение — команда (начинается с /)
+                $this->handleCommand($chatId, $text, $username, $message_id);
+            } elseif ($callbackQuery) {  // обработка нажатий кнопок
+                $this->handleCallback($chatId, $text, $username, $callbackQuery, $message_id);
+            } else {  // Иначе — обычный текст
+                $this->handleText($chatId, $text);
+            }
         }
-
     }
 
     // Обработчик команд (/start, /help и т. д.)
@@ -57,13 +61,231 @@ class TelegramBotService
     }
 
     // Обработчик обычных текстовых сообщений (не команд)
-    private function handleText(int $chatId, string $text): void
+    private function handleText(int $chatId, ?string $text): void  // Сюда нужно будет функцию валидации
     {
-        $this->telegram->sendMessage([
-            'chat_id' => $chatId,
-            'text' => "Вы сказали: $text",
-        ]);
+        $user = BotUsers::where('chat_id', $chatId)->first();
+        $stage = $user->stage;
+        switch ($stage) {
+            case 'post_adv_category_car_step1':
+                $mark = $text; // здесь потом будут массивы по маркам, что бы однообразно и красиво выбирать марку
+                $stage = 'post_adv_car_mark_step2';
 
+                $user = BotUsers::where('chat_id', $chatId)->first();
+                $user->update(['stage' => $stage]);
+                $user->tempAdv()->updateOrCreate(
+                    ['id_bot_user' => $user->id],
+                    ['adv_car_mark' => $mark]
+                );
+
+                $text = '🕑 <b>Год выпуска</b>
+
+Укажите год выпуска авто.
+
+<i>Например: 2016</i>';
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => $text,
+                    'parse_mode' => 'HTML',
+                ]);
+                break;
+            case 'post_adv_car_mark_step2':
+                $pattern = '#^[0-9]{4}+$#';
+                if (preg_match($pattern, $text)) {
+                    $stage = 'post_adv_car_year_realise_step3';
+
+                    $user = BotUsers::where('chat_id', $chatId)->first();
+                    $user->update(['stage' => $stage]);
+                    $user->tempAdv()->updateOrCreate(
+                        ['id_bot_user' => $user->id],
+                        ['adv_car_year_realise' => $text]
+                    );
+                    $text = '💲 <b>Цена</b>
+
+Укажите цену.';
+                    $this->telegram->sendMessage([
+                        'chat_id' => $chatId,
+                        'text' => $text,
+                        'parse_mode' => 'HTML',
+                    ]);
+                } else {
+                    $text = 'Укажите корректный год выпуска авто.
+
+<i>Например: 2016</i>';
+                    $this->telegram->sendMessage([
+                        'chat_id' => $chatId,
+                        'text' => $text,
+                        'parse_mode' => 'HTML',
+                    ]);
+                }
+                break;
+            case 'post_adv_car_year_realise_step3':
+                if (is_numeric($text)) {
+                    $stage = 'post_adv_price_step4';
+
+                    $user = BotUsers::where('chat_id', $chatId)->first();
+                    $user->update(['stage' => $stage]);
+                    $user->tempAdv()->updateOrCreate(
+                        ['id_bot_user' => $user->id],
+                        ['adv_price' => $text]
+                    );
+                    $text = '📝 <b>Описание</b>
+
+Укажите описание объявления.
+
+<b>ВАЖНО! Запрещено добавлять любые контакты, хештеги и ссылки, иначе объявление может быть удалено!</b>';
+                    $this->telegram->sendMessage([
+                        'chat_id' => $chatId,
+                        'text' => $text,
+                        'parse_mode' => 'HTML',
+                    ]);
+                } else {
+                    $text = 'Введите цену в российских рублях.
+
+<i>Например: 150000</i>';
+                    $this->telegram->sendMessage([
+                        'chat_id' => $chatId,
+                        'text' => $text,
+                        'parse_mode' => 'HTML',
+                    ]);
+                }
+                break;
+            case 'post_adv_price_step4':
+                $stage = 'post_adv_description_step5';
+
+                $user = BotUsers::where('chat_id', $chatId)->first();
+                $user->update(['stage' => $stage]);
+                $user->tempAdv()->updateOrCreate(
+                    ['id_bot_user' => $user->id],
+                    ['adv_description' => $text]
+                );
+                $text = '📷 <b>Фото</b>
+
+Добавьте <b>одно</b> фото.
+
+<i>Остальные фотографии можно прикрепить в комментариях</i>';
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => $text,
+                    'parse_mode' => 'HTML',
+                ]);
+                break;
+            case 'post_adv_description_step5':
+                $update = $this->telegram->getWebhookUpdate(); // Получаем обновление от Telegram
+                $message = $update->getMessage();
+                $photo = $message->getPhoto();
+                if ($photo) {
+                    $date_now = date('Y-m-d H:i:s');
+                    $last_date_send_add = BotUsers::where('chat_id', $chatId)->first()->date_send_add;
+                    $diff = strtotime($last_date_send_add) - strtotime($date_now);
+                    $min_around = abs(round($diff / 60));
+
+                    if ($min_around < 1) {// 960
+                        $text = 'Публиковать обьявление можно раз <b>в 12 часов</b>
+
+Повторите попытку через <b>'.(960 - $min_around).'</b> минут.';
+                        $this->telegram->sendMessage([
+                            'chat_id' => $chatId,
+                            'text' => $text,
+                            'parse_mode' => 'HTML',
+                        ]);
+                    } else {
+                        $max_index = count($photo) - 1;
+                        $FileId = $photo[$max_index]->getFileId();
+                        $stage = '';
+
+                        $user = BotUsers::where('chat_id', $chatId)->first();
+                        $user->update([
+                            'stage' => $stage,
+                            'date_send_add' => $date_now,
+                        ]);
+                        $user->tempAdv()->updateOrCreate(
+                            ['id_bot_user' => $user->id],
+                            ['adv_photo' => $FileId]
+                        );
+
+                        $username = BotUsers::where('chat_id', $chatId)->first()->username;
+                        if ($username == '') {
+                            $stage = 'dop_contact';
+
+                            $user->update(['stage' => $stage]);
+
+                            $text = '❗️ Контакты
+
+❗️У вас скрытый никнейм, вам не смогут написать.
+Перед подачей объявления - измените настройки приватности в Телеграме: Конфидициальность, Перессылка сообщений, Для всех!
+
+Или укажите дополнительные контакты
+
+<i>Например: телефон 8-902-210-99-99</i>';
+                            $this->telegram->sendMessage([
+                                'chat_id' => $chatId,
+                                'text' => $text,
+                                'parse_mode' => 'HTML',
+                            ]);
+                        } else {
+                            $temp_adv_row = $user->tempAdv()->first();
+                            $text_adv = "<i>$temp_adv_row->adv_category > $temp_adv_row->adv_car_mark > </i>
+
+<b>$temp_adv_row->adv_car_mark, $temp_adv_row->adv_car_year_realise г.</b>
+
+💲 <b>number_format($temp_adv_row->adv_price, 0, ',', ' ') руб.</b>
+
+$temp_adv_row->adv_description
+
+Продавец: @$username
+";
+                            $this->telegram->sendMessage([// предпросмотр для теста
+                                'chat_id' => $chatId,
+                                'text' => $text_adv,
+                                'parse_mode' => 'HTML',
+                            ]);
+
+                            $temp_adv_row->delete(); // удаляем строки из таблицы temp
+                            /*
+                             * тут логика отправки поста в группу
+                             * $bot->sendPhoto(-1001647936849, $res_query['add_photo'], $text_add,null,null,false, 'HTML');
+                             */
+
+                            /*
+                             * тут логика отправки пользователям по фильтрам
+                             * $bot->sendPhoto($users_arr[$i]['id_user'], $res_query['add_photo'], $text_add,null,null,false, 'HTML');
+                             */
+                            $text = '👍 <b>Публикация</b>
+
+    Объявление успешно опубликовано в канале @avto73ru';
+                            $keyboard = [
+                                [
+                                    [
+                                        'text' => 'Главное меню',
+                                        'callback_data' => 'back_main_menu',
+                                    ],
+                                ],
+                            ];
+                            $reply_markup = [
+                                'inline_keyboard' => $keyboard,
+                            ];
+                            $this->telegram->sendMessage([
+                                'chat_id' => $chatId,
+                                'text' => $text,
+                                'parse_mode' => 'HTML',
+                                'reply_markup' => json_encode($reply_markup),
+                            ]);
+                        }
+                    }
+                } else {
+                    $text = 'Отправьте фотографию, а не файл\текст';
+                    $this->telegram->sendMessage([
+                        'chat_id' => $chatId,
+                        'text' => $text,
+                    ]);
+                }
+                break;
+            default:
+                $this->telegram->sendMessage([
+                    'chat_id' => $chatId,
+                    'text' => "Неопределённый stage: $stage",
+                ]);
+        }
     }
 
     // обработчик callback
