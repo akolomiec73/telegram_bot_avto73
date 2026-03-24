@@ -6,9 +6,10 @@ namespace App\Services;
 
 class TextMessagesService
 {
-    public static function getStartMessage(): string
+    public static function getStartMessage(): array
     {
-        return '🚗 <b>Главное меню</b>
+        $result = [];
+        $result['text'] = '🚗 <b>Главное меню</b>
 
 Авто Барахолка Ульяновск | <b>avto73ru</b>
 
@@ -16,6 +17,30 @@ class TextMessagesService
 Канал: @avto73ru
 
 Главная наша цель - создание удобной платформы для продажи и покупки б\у авто и запчастей в г.Ульяновск.';
+        $keyboard = [
+            [
+                [
+                    'text' => 'Подать объявление',
+                    'callback_data' => 'post_adv',
+                ],
+                [
+                    'text' => 'Найти объявление',
+                    'callback_data' => 'search_adv',
+                ],
+            ],
+            [
+                [
+                    'text' => 'Объявления',
+                    'url' => 'https://t.me/avto73ru',
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
     }
 
     public static function getCarYearMessage(): string
@@ -87,31 +112,73 @@ class TextMessagesService
 
     public static function getFullAdvMessage(object $temp_adv_row, string $username): string
     {
+        $simple_price = number_format($temp_adv_row->adv_price, 0, ',', ' ');
+
         return "<i>$temp_adv_row->adv_category > $temp_adv_row->adv_car_mark > </i>
 
 <b>$temp_adv_row->adv_car_mark, $temp_adv_row->adv_car_year_realise г.</b>
 
-💲 <b>number_format($temp_adv_row->adv_price, 0, ',', ' ') руб.</b>
+💲 <b>$simple_price руб.</b>
 
 $temp_adv_row->adv_description
 
 Продавец: @$username";
     }
 
-    public static function getFinishMessage(): string
+    public static function getFinishMessage(): array
     {
-        return '👍 <b>Публикация</b>
+        $result = [];
+        $result['text'] = '👍 <b>Публикация</b>
 
     Объявление успешно опубликовано в канале @avto73ru';
+        $keyboard = [
+            [
+                [
+                    'text' => 'Главное меню',
+                    'callback_data' => 'back_main_menu',
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
     }
 
-    public static function getPostMessage(): string
+    public static function getPostMessage(): array
     {
-        return '️ Перед подачей объявления - измените настройки приватности в Телеграме: Конфидициальность, Перессылка сообщений, Для всех! Иначе вам не смогут написать❗️
+        $result = [];
+        $result['text'] = '️ Перед подачей объявления - измените настройки приватности в Телеграме: Конфидициальность, Перессылка сообщений, Для всех! Иначе вам не смогут написать❗️
 
 🚦 <b>Категория</b>
 
 Выберите категорию объявления из представленных.';
+        $keyboard = [
+            [
+                [
+                    'text' => '🚗 Транспорт',
+                    'callback_data' => 'category_car',
+                ],
+                [
+                    'text' => '⚙️ Запчасти',
+                    'callback_data' => 'category_detail',
+                ],
+            ],
+            [
+                [
+                    'text' => 'Главное меню',
+                    'callback_data' => 'back_main_menu',
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
     }
 
     public static function getCategoryCarMessage(): string

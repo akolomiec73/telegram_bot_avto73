@@ -11,9 +11,12 @@ class TelegramBotService
 {
     protected Api $telegram;  // Экземпляр API Telegram
 
-    public function __construct(Api $telegram)
+    protected TelegramMessenger $senderMessage;
+
+    public function __construct(Api $telegram, TelegramMessenger $senderMessage)
     {
         $this->telegram = $telegram;
+        $this->senderMessage = $senderMessage;
     }
 
     // Основной метод обработки обновлений от Telegram
@@ -53,10 +56,7 @@ class TelegramBotService
                 $this->sendWelcomeMessage($chatId, $username, $message_id, true);
                 break;
             default:
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => 'Неизвестная команда.',
-                ]);
+                $this->senderMessage->sendMessage($chatId, 'Неизвестная команда.');
         }
     }
 
@@ -78,11 +78,7 @@ class TelegramBotService
                 );
 
                 $text = TextMessagesService::getCarYearMessage();
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => $text,
-                    'parse_mode' => 'HTML',
-                ]);
+                $this->senderMessage->sendMessage($chatId, $text);
                 break;
             case 'post_adv_car_mark_step2':
                 $pattern = '#^[0-9]{4}+$#';
@@ -96,18 +92,10 @@ class TelegramBotService
                         ['adv_car_year_realise' => $text]
                     );
                     $text = TextMessagesService::getPriceMessage();
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => $text,
-                        'parse_mode' => 'HTML',
-                    ]);
+                    $this->senderMessage->sendMessage($chatId, $text);
                 } else {
                     $text = TextMessagesService::getCorrectCarYearMessage();
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => $text,
-                        'parse_mode' => 'HTML',
-                    ]);
+                    $this->senderMessage->sendMessage($chatId, $text);
                 }
                 break;
             case 'post_adv_car_year_realise_step3':
@@ -121,18 +109,10 @@ class TelegramBotService
                         ['adv_price' => $text]
                     );
                     $text = TextMessagesService::getDescriptionMessage();
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => $text,
-                        'parse_mode' => 'HTML',
-                    ]);
+                    $this->senderMessage->sendMessage($chatId, $text);
                 } else {
                     $text = TextMessagesService::getCorrectPriceMessage();
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => $text,
-                        'parse_mode' => 'HTML',
-                    ]);
+                    $this->senderMessage->sendMessage($chatId, $text);
                 }
                 break;
             case 'post_adv_price_step4':
@@ -145,11 +125,7 @@ class TelegramBotService
                     ['adv_description' => $text]
                 );
                 $text = TextMessagesService::getPhotoMessage();
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => $text,
-                    'parse_mode' => 'HTML',
-                ]);
+                $this->senderMessage->sendMessage($chatId, $text);
                 break;
             case 'post_adv_description_step5':
                 $update = $this->telegram->getWebhookUpdate(); // Получаем обновление от Telegram
@@ -163,11 +139,7 @@ class TelegramBotService
 
                     if ($min_around < 1) {// 960
                         $text = TextMessagesService::getTimeLimitMessage($min_around);
-                        $this->telegram->sendMessage([
-                            'chat_id' => $chatId,
-                            'text' => $text,
-                            'parse_mode' => 'HTML',
-                        ]);
+                        $this->senderMessage->sendMessage($chatId, $text);
                     } else {
                         $max_index = count($photo) - 1;
                         $FileId = $photo[$max_index]->getFileId();
@@ -190,19 +162,11 @@ class TelegramBotService
                             $user->update(['stage' => $stage]);
 
                             $text = TextMessagesService::getContactMessage();
-                            $this->telegram->sendMessage([
-                                'chat_id' => $chatId,
-                                'text' => $text,
-                                'parse_mode' => 'HTML',
-                            ]);
+                            $this->senderMessage->sendMessage($chatId, $text);
                         } else {
                             $temp_adv_row = $user->tempAdv()->first();
                             $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $username);
-                            $this->telegram->sendMessage([// предпросмотр для теста
-                                'chat_id' => $chatId,
-                                'text' => $text_adv,
-                                'parse_mode' => 'HTML',
-                            ]);
+                            $this->senderMessage->sendMessage($chatId, $text_adv); // предпросмотр для теста
 
                             $temp_adv_row->delete(); // удаляем строки из таблицы temp
                             /*
@@ -214,39 +178,20 @@ class TelegramBotService
                              * тут логика отправки пользователям по фильтрам
                              * $bot->sendPhoto($users_arr[$i]['id_user'], $res_query['add_photo'], $text_add,null,null,false, 'HTML');
                              */
-                            $text = TextMessagesService::getFinishMessage();
-                            $keyboard = [
-                                [
-                                    [
-                                        'text' => 'Главное меню',
-                                        'callback_data' => 'back_main_menu',
-                                    ],
-                                ],
-                            ];
-                            $reply_markup = [
-                                'inline_keyboard' => $keyboard,
-                            ];
-                            $this->telegram->sendMessage([
-                                'chat_id' => $chatId,
-                                'text' => $text,
-                                'parse_mode' => 'HTML',
-                                'reply_markup' => json_encode($reply_markup),
-                            ]);
+                            $textMessage = TextMessagesService::getFinishMessage();
+                            $text = $textMessage['text'];
+                            $keyboard = $textMessage['keyboard'];
+
+                            $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
                         }
                     }
                 } else {
                     $text = 'Отправьте фотографию, а не файл\текст';
-                    $this->telegram->sendMessage([
-                        'chat_id' => $chatId,
-                        'text' => $text,
-                    ]);
+                    $this->senderMessage->sendMessage($chatId, $text);
                 }
                 break;
             default:
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => "Неопределённый stage: $stage",
-                ]);
+                $this->senderMessage->sendMessage($chatId, "Неопределённый stage: $stage");
         }
     }
 
@@ -263,69 +208,30 @@ class TelegramBotService
                 $this->sendCategoryCarMessage($chatId, $message_id);
                 break;
             case 'category_detail':
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => 'category_detail',
-                ]);
+                $this->senderMessage->sendMessage($chatId, 'category_detail');
                 break;
             case 'search_adv':
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => 'search_adv',
-                ]);
+                $this->senderMessage->sendMessage($chatId, 'search_adv');
                 break;
             case 'back_main_menu':
                 $this->sendWelcomeMessage($chatId, $username, $message_id, false);
                 break;
             default:
-                $this->telegram->sendMessage([
-                    'chat_id' => $chatId,
-                    'text' => 'Неизвестный callback.',
-                ]);
+                $this->senderMessage->sendMessage($chatId, 'Неизвестный callback.');
         }
     }
 
     // Отправка приветственного сообщения
     private function sendWelcomeMessage(int $chatId, string $username, int $message_id, bool $isFirstMessage): void
     {
-        $text = TextMessagesService::getStartMessage();
-        $keyboard = [
-            [
-                [
-                    'text' => 'Подать объявление',
-                    'callback_data' => 'post_adv',
-                ],
-                [
-                    'text' => 'Найти объявление',
-                    'callback_data' => 'search_adv',
-                ],
-            ],
-            [
-                [
-                    'text' => 'Объявления',
-                    'url' => 'https://t.me/avto73ru',
-                ],
-            ],
-        ];
+        $textMessage = TextMessagesService::getStartMessage();
+        $text = $textMessage['text'];
+        $keyboard = $textMessage['keyboard'];
 
-        $reply_markup = [
-            'inline_keyboard' => $keyboard,
-        ];
         if ($isFirstMessage) {
-            $this->telegram->sendMessage([
-                'chat_id' => $chatId,
-                'text' => $text,
-                'parse_mode' => 'HTML',
-                'reply_markup' => json_encode($reply_markup),
-            ]);
+            $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
         } else {
-            $this->telegram->editMessageText([
-                'chat_id' => $chatId,
-                'message_id' => $message_id,
-                'text' => $text,
-                'parse_mode' => 'HTML',
-                'reply_markup' => json_encode($reply_markup),
-            ]);
+            $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
         }
 
         BotUsers::updateOrCreate( // метод ищет по условию и обновляет данные в БД если находит, если нет - добавляет
@@ -337,49 +243,17 @@ class TelegramBotService
     // Отправка сообщения о подаче объявления
     private function sendPostMessage(int $chatId, int $message_id): void
     {
-        $text = TextMessagesService::getPostMessage();
-        $keyboard = [
-            [
-                [
-                    'text' => '🚗 Транспорт',
-                    'callback_data' => 'category_car',
-                ],
-                [
-                    'text' => '⚙️ Запчасти',
-                    'callback_data' => 'category_detail',
-                ],
-            ],
-            [
-                [
-                    'text' => 'Главное меню',
-                    'callback_data' => 'back_main_menu',
-                ],
-            ],
-        ];
-
-        $reply_markup = [
-            'inline_keyboard' => $keyboard,
-        ];
-        $this->telegram->editMessageText([
-            'chat_id' => $chatId,
-            'message_id' => $message_id,
-            'text' => $text,
-            'parse_mode' => 'HTML',
-            'reply_markup' => json_encode($reply_markup),
-        ]);
+        $textMessage = TextMessagesService::getPostMessage();
+        $text = $textMessage['text'];
+        $keyboard = $textMessage['keyboard'];
+        $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
     }
 
     // Отправка сообщения о выборе категории транспорт
     private function sendCategoryCarMessage(int $chatId, int $message_id): void
     {
         $text = TextMessagesService::getCategoryCarMessage();
-
-        $this->telegram->editMessageText([
-            'chat_id' => $chatId,
-            'message_id' => $message_id,
-            'text' => $text,
-            'parse_mode' => 'HTML',
-        ]);
+        $this->senderMessage->editMessage($chatId, $message_id, $text);
 
         $stage = 'post_adv_category_car_step1';
         $adv_category = 'Транспорт';
