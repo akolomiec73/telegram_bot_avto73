@@ -13,7 +13,7 @@ class BotUsers extends Model
 {
     protected $table = 'bot_users';
 
-    protected $fillable = ['chat_id', 'username', 'stage'];
+    protected $fillable = ['chat_id', 'username', 'stage', 'date_send_add'];
 
     public function tempAdv()
     {
