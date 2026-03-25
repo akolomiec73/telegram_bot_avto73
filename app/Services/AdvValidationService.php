@@ -23,7 +23,7 @@ class AdvValidationService
     public function validateMainText(?string $text): bool
     {
         if (empty($text)) {
-            return false;
+            return true;
         }
         $sanitized = htmlspecialchars(strip_tags($text, self::ALLOWED_TAGS), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
