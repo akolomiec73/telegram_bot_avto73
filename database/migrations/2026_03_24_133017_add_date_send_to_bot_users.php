@@ -14,7 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bot_users', function (Blueprint $table) {
-            $table->dateTime('date_send_add')->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->dateTime('date_send_add')->nullable();
         });
     }
 

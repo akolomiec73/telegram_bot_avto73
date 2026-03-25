@@ -94,11 +94,11 @@ class TextMessagesService
 <i>Остальные фотографии можно прикрепить в комментариях</i>';
     }
 
-    public static function getTimeLimitMessage(int $min_around): string
+    public static function getTimeLimitMessage(int $count_minutes): string
     {
         return 'Публиковать обьявление можно раз <b>в 12 часов</b>
 
-Повторите попытку через <b>'.(960 - $min_around).'</b> минут.';
+Повторите попытку через <b>'.(720 - $count_minutes).'</b> минут.';
     }
 
     public static function getContactMessage(): string
@@ -284,5 +284,14 @@ $temp_adv_row->adv_description
 Укажите короткое название объявления.
 
 <i>Накидки на сидения</i>';
+    }
+
+    public static function getCorrectDescriptionMessage(): string
+    {
+        return '📝 <b>Описание</b>
+
+Укажите <b>Корректное</b> описание объявления.
+
+<b>ВАЖНО! Запрещено добавлять любые контакты, хештеги и ссылки, иначе объявление может быть удалено!</b>';
     }
 }

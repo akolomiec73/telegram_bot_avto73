@@ -61,6 +61,7 @@ class TelegramMessenger
     public function sendMessageInPublic(string $FileId, string $text): mixed
     {
         $groupId = -1001692673051;
+
         return $this->telegram->sendPhoto([
             'chat_id' => $groupId,
             'photo' => $FileId,
