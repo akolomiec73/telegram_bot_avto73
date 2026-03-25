@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Repositories\EloquentUserRepository;
+use App\Services\SenderService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
             UserRepositoryInterface::class,
             EloquentUserRepository::class
         );
+        $this->app->when(SenderService::class)
+            ->needs('$publicGroupId')
+            ->give(config('services.telegram.public_group_id'));
     }
 
     /**

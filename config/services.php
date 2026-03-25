@@ -37,4 +37,8 @@ return [
         ],
     ],
 
+    'telegram' => [
+        'public_group_id' => env('TELEGRAM_PUBLIC_GROUP_ID', '-1001692673051'),
+    ],
+
 ];

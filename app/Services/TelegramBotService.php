@@ -14,7 +14,7 @@ class TelegramBotService
 {
     protected Api $telegram;  // Экземпляр API Telegram
 
-    protected TelegramMessenger $senderMessage;
+    protected SenderService $senderMessage;
 
     protected UserRepositoryInterface $userRepository;
 
@@ -22,7 +22,7 @@ class TelegramBotService
 
     public function __construct(
         Api $telegram,
-        TelegramMessenger $senderMessage,
+        SenderService $senderMessage,
         UserRepositoryInterface $userRepository,
         AdvValidationService $validator
     ) {
