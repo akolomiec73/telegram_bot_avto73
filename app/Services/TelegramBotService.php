@@ -75,7 +75,7 @@ class TelegramBotService
                 $mark = $text; // здесь потом будут массивы по маркам, что бы однообразно и красиво выбирать марку
                 $stage = 'post_adv_car_mark_step2';
 
-                $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                $this->userRepository->updateUser($chatId, ['stage' => $stage]);
                 $this->userRepository->updateTempAdv($user->id, [
                     'id_bot_user' => $user->id,
                     'adv_car_mark' => $mark,
@@ -89,7 +89,7 @@ class TelegramBotService
                 if (preg_match($pattern, $text)) {
                     $stage = 'post_adv_car_year_realise_step3';
 
-                    $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                    $this->userRepository->updateUser($chatId, ['stage' => $stage]);
                     $this->userRepository->updateTempAdv($user->id, [
                         'id_bot_user' => $user->id,
                         'adv_car_year_realise' => $text,
@@ -105,7 +105,7 @@ class TelegramBotService
                 if (is_numeric($text)) {
                     $stage = 'post_adv_price_step4';
 
-                    $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                    $this->userRepository->updateUser($chatId, ['stage' => $stage]);
                     $this->userRepository->updateTempAdv($user->id, [
                         'id_bot_user' => $user->id,
                         'adv_price' => $text,
@@ -120,7 +120,7 @@ class TelegramBotService
             case 'post_adv_price_step4':
                 $stage = 'post_adv_description_step5';
 
-                $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                $this->userRepository->updateUser($chatId, ['stage' => $stage]);
                 $this->userRepository->updateTempAdv($user->id, [
                     'id_bot_user' => $user->id,
                     'adv_description' => $text,
@@ -146,7 +146,7 @@ class TelegramBotService
                         $FileId = $photo[$max_index]->getFileId();
                         $stage = '';
 
-                        $this->userRepository->UpdateUser($chatId, [
+                        $this->userRepository->updateUser($chatId, [
                             'stage' => $stage,
                             'date_send_add' => $date_now,
                         ]);
@@ -159,7 +159,7 @@ class TelegramBotService
                         if ($username == '') {
                             $stage = 'dop_contact';
 
-                            $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                            $this->userRepository->updateUser($chatId, ['stage' => $stage]);
 
                             $text = TextMessagesService::getContactMessage();
                             $this->senderMessage->sendMessage($chatId, $text);
@@ -232,7 +232,7 @@ class TelegramBotService
             $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
         }
 
-        $this->userRepository->UpdateUser($chatId, [
+        $this->userRepository->updateUser($chatId, [
             'username' => $username,
             'stage' => '',
         ]);
@@ -257,7 +257,7 @@ class TelegramBotService
         $adv_category = 'Транспорт';
 
         $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
         $this->userRepository->updateTempAdv($user->id, [
             'id_bot_user' => $user->id,
             'adv_category' => $adv_category,

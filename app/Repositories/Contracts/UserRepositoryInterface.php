@@ -11,7 +11,7 @@ interface UserRepositoryInterface
 {
     public function findByChatId(int $chatId): ?BotUsers;
 
-    public function UpdateUser(int $chatId, array $data): void;
+    public function updateUser(int $chatId, array $data): void;
 
     public function updateTempAdv(int $userId, array $data): void;
 

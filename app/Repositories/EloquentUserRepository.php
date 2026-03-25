@@ -18,7 +18,7 @@ class EloquentUserRepository implements UserRepositoryInterface
         return BotUsers::where('chat_id', $chatId)->first();
     }
 
-    public function UpdateUser(int $chatId, array $data): void
+    public function updateUser(int $chatId, array $data): void
     {
         BotUsers::updateOrCreate(
             ['chat_id' => $chatId],
