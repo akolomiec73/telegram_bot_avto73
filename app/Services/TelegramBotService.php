@@ -166,11 +166,8 @@ class TelegramBotService
                         } else {
                             $temp_adv_row = $this->userRepository->getAdvRow($chatId);
                             $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $username);
-                            $this->senderMessage->sendMessage($chatId, $text_adv); // предпросмотр для теста
-                            /*
-                             * тут логика отправки поста в группу
-                             * $bot->sendPhoto(-1001647936849, $res_query['add_photo'], $text_add,null,null,false, 'HTML');
-                             */
+
+                            $this->senderMessage->sendMessageInPublic($FileId, $text_adv); // отправка поста в паблик
 
                             /*
                              * тут логика отправки пользователям по фильтрам
