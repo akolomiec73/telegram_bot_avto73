@@ -1,5 +1,8 @@
 <?php
 
+/*
+ * отправка сообщений в телеграм
+ */
 declare(strict_types=1);
 
 namespace App\Services;

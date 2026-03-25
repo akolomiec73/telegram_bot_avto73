@@ -1,5 +1,8 @@
 <?php
 
+/*
+ * Модель таблицы запоминающей объявление пользователя
+ */
 declare(strict_types=1);
 
 namespace App\Models;

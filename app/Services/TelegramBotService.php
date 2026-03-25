@@ -1,10 +1,13 @@
 <?php
 
+/*
+ * Основная бизнес-логика
+ */
 declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\BotUsers;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use Telegram\Bot\Api;
 
 class TelegramBotService
@@ -13,10 +16,13 @@ class TelegramBotService
 
     protected TelegramMessenger $senderMessage;
 
-    public function __construct(Api $telegram, TelegramMessenger $senderMessage)
+    protected UserRepositoryInterface $userRepository;
+
+    public function __construct(Api $telegram, TelegramMessenger $senderMessage, UserRepositoryInterface $userRepository)
     {
         $this->telegram = $telegram;
         $this->senderMessage = $senderMessage;
+        $this->userRepository = $userRepository;
     }
 
     // Основной метод обработки обновлений от Telegram
@@ -28,10 +34,10 @@ class TelegramBotService
             return;
         }  // Если сообщения нет (например, событие о добавлении в чат), выходим
         $callbackQuery = $update->getCallbackQuery();
-        $chatId = $message->getChat()->getId();  // ID чата
-        $text = $message->getText();  // Текст сообщения
+        $chatId = $message->getChat()->getId();
+        $text = $message->getText();
         $message_id = $message->getMessageId(); // id message для изменений
-        $username = $message->getChat()->getUsername(); // ник пользователя
+        $username = $message->getChat()->getUsername();
         $photo = $message->getPhoto();
 
         // Определяем тип сообщения и вызываем соответствующий обработчик
@@ -48,7 +54,7 @@ class TelegramBotService
         }
     }
 
-    // Обработчик команд (/start, /help и т. д.)
+    // Обработчик команд
     private function handleCommand(int $chatId, string $text, string $username, int $message_id): void
     {
         switch ($text) {
@@ -60,22 +66,20 @@ class TelegramBotService
         }
     }
 
-    // Обработчик обычных текстовых сообщений (не команд)
+    // Обработчик обычных текстовых сообщений
     private function handleText(int $chatId, ?string $text): void  // Сюда нужно будет функцию валидации
     {
-        $user = BotUsers::where('chat_id', $chatId)->first();
-        $stage = $user->stage;
-        switch ($stage) {
+        $user = $this->userRepository->findByChatId($chatId);
+        switch ($user->stage) {
             case 'post_adv_category_car_step1':
                 $mark = $text; // здесь потом будут массивы по маркам, что бы однообразно и красиво выбирать марку
                 $stage = 'post_adv_car_mark_step2';
 
-                $user = BotUsers::where('chat_id', $chatId)->first();
-                $user->update(['stage' => $stage]);
-                $user->tempAdv()->updateOrCreate(
-                    ['id_bot_user' => $user->id],
-                    ['adv_car_mark' => $mark]
-                );
+                $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                $this->userRepository->updateTempAdv($user->id, [
+                    'id_bot_user' => $user->id,
+                    'adv_car_mark' => $mark,
+                ]);
 
                 $text = TextMessagesService::getCarYearMessage();
                 $this->senderMessage->sendMessage($chatId, $text);
@@ -85,12 +89,11 @@ class TelegramBotService
                 if (preg_match($pattern, $text)) {
                     $stage = 'post_adv_car_year_realise_step3';
 
-                    $user = BotUsers::where('chat_id', $chatId)->first();
-                    $user->update(['stage' => $stage]);
-                    $user->tempAdv()->updateOrCreate(
-                        ['id_bot_user' => $user->id],
-                        ['adv_car_year_realise' => $text]
-                    );
+                    $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                    $this->userRepository->updateTempAdv($user->id, [
+                        'id_bot_user' => $user->id,
+                        'adv_car_year_realise' => $text,
+                    ]);
                     $text = TextMessagesService::getPriceMessage();
                     $this->senderMessage->sendMessage($chatId, $text);
                 } else {
@@ -102,12 +105,11 @@ class TelegramBotService
                 if (is_numeric($text)) {
                     $stage = 'post_adv_price_step4';
 
-                    $user = BotUsers::where('chat_id', $chatId)->first();
-                    $user->update(['stage' => $stage]);
-                    $user->tempAdv()->updateOrCreate(
-                        ['id_bot_user' => $user->id],
-                        ['adv_price' => $text]
-                    );
+                    $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                    $this->userRepository->updateTempAdv($user->id, [
+                        'id_bot_user' => $user->id,
+                        'adv_price' => $text,
+                    ]);
                     $text = TextMessagesService::getDescriptionMessage();
                     $this->senderMessage->sendMessage($chatId, $text);
                 } else {
@@ -118,12 +120,11 @@ class TelegramBotService
             case 'post_adv_price_step4':
                 $stage = 'post_adv_description_step5';
 
-                $user = BotUsers::where('chat_id', $chatId)->first();
-                $user->update(['stage' => $stage]);
-                $user->tempAdv()->updateOrCreate(
-                    ['id_bot_user' => $user->id],
-                    ['adv_description' => $text]
-                );
+                $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+                $this->userRepository->updateTempAdv($user->id, [
+                    'id_bot_user' => $user->id,
+                    'adv_description' => $text,
+                ]);
                 $text = TextMessagesService::getPhotoMessage();
                 $this->senderMessage->sendMessage($chatId, $text);
                 break;
@@ -133,7 +134,7 @@ class TelegramBotService
                 $photo = $message->getPhoto();
                 if ($photo) {
                     $date_now = date('Y-m-d H:i:s');
-                    $last_date_send_add = BotUsers::where('chat_id', $chatId)->first()->date_send_add;
+                    $last_date_send_add = $user->date_send_add;
                     $diff = strtotime($last_date_send_add) - strtotime($date_now);
                     $min_around = abs(round($diff / 60));
 
@@ -145,30 +146,27 @@ class TelegramBotService
                         $FileId = $photo[$max_index]->getFileId();
                         $stage = '';
 
-                        $user = BotUsers::where('chat_id', $chatId)->first();
-                        $user->update([
+                        $this->userRepository->UpdateUser($chatId, [
                             'stage' => $stage,
                             'date_send_add' => $date_now,
                         ]);
-                        $user->tempAdv()->updateOrCreate(
-                            ['id_bot_user' => $user->id],
-                            ['adv_photo' => $FileId]
-                        );
+                        $this->userRepository->updateTempAdv($user->id, [
+                            'id_bot_user' => $user->id,
+                            'adv_photo' => $FileId,
+                        ]);
 
-                        $username = BotUsers::where('chat_id', $chatId)->first()->username;
+                        $username = $user->username;
                         if ($username == '') {
                             $stage = 'dop_contact';
 
-                            $user->update(['stage' => $stage]);
+                            $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
 
                             $text = TextMessagesService::getContactMessage();
                             $this->senderMessage->sendMessage($chatId, $text);
                         } else {
-                            $temp_adv_row = $user->tempAdv()->first();
+                            $temp_adv_row = $this->userRepository->getAdvRow($chatId);
                             $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $username);
                             $this->senderMessage->sendMessage($chatId, $text_adv); // предпросмотр для теста
-
-                            $temp_adv_row->delete(); // удаляем строки из таблицы temp
                             /*
                              * тут логика отправки поста в группу
                              * $bot->sendPhoto(-1001647936849, $res_query['add_photo'], $text_add,null,null,false, 'HTML');
@@ -191,7 +189,7 @@ class TelegramBotService
                 }
                 break;
             default:
-                $this->senderMessage->sendMessage($chatId, "Неопределённый stage: $stage");
+                $this->senderMessage->sendMessage($chatId, "Неопределённый stage: $user->stage");
         }
     }
 
@@ -234,10 +232,10 @@ class TelegramBotService
             $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
         }
 
-        BotUsers::updateOrCreate( // метод ищет по условию и обновляет данные в БД если находит, если нет - добавляет
-            ['chat_id' => $chatId], // условия поиска
-            ['username' => $username, 'stage' => ''] // данные для обновления/создания
-        );
+        $this->userRepository->UpdateUser($chatId, [
+            'username' => $username,
+            'stage' => '',
+        ]);
     }
 
     // Отправка сообщения о подаче объявления
@@ -258,12 +256,11 @@ class TelegramBotService
         $stage = 'post_adv_category_car_step1';
         $adv_category = 'Транспорт';
 
-        $user = BotUsers::where('chat_id', $chatId)->first();
-        $user->update(['stage' => $stage]);
-        $user->tempAdv()->updateOrCreate(
-            ['id_bot_user' => $user->id], // условие поиска
-            ['adv_category' => $adv_category] // данные для обновления/создания
-        );
-
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->UpdateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, [
+            'id_bot_user' => $user->id,
+            'adv_category' => $adv_category,
+        ]);
     }
 }

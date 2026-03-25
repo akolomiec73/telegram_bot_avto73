@@ -9,11 +9,11 @@ use Illuminate\Http\Request;
 
 class TelegramBotController extends Controller
 {
-    protected TelegramBotService $botService; // Экземпляр сервиса
+    protected TelegramBotService $botService;
 
     public function __construct(TelegramBotService $botService)
     {
-        $this->botService = $botService; // Сохраняем сервис в свойство класса
+        $this->botService = $botService;
     }
 
     public function webhook(Request $request): void
