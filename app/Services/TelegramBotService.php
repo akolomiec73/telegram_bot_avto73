@@ -203,7 +203,22 @@ class TelegramBotService
                 $this->sendCategoryCarMessage($chatId, $message_id);
                 break;
             case 'category_detail':
-                $this->senderMessage->sendMessage($chatId, 'category_detail');
+                $this->sendCategoryDetailMessage($chatId, $message_id);
+                break;
+            case 'category_detail_detail':
+                $this->sendCategoryDetailDetailMessage($chatId, $message_id);
+                break;
+            case 'category_detail_wheels':
+                $this->sendCategoryDetailWheelsMessage($chatId, $message_id);
+                break;
+            case 'category_detail_audio':
+                $this->sendCategoryDetailAudioMessage($chatId, $message_id);
+                break;
+            case 'category_detail_tools':
+                $this->sendCategoryDetailToolsMessage($chatId, $message_id);
+                break;
+            case 'category_detail_others':
+                $this->sendCategoryDetailOthersMessage($chatId, $message_id);
                 break;
             case 'search_adv':
                 $this->senderMessage->sendMessage($chatId, 'search_adv');
@@ -252,6 +267,100 @@ class TelegramBotService
 
         $stage = 'post_adv_category_car_step1';
         $adv_category = 'Транспорт';
+
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, [
+            'id_bot_user' => $user->id,
+            'adv_category' => $adv_category,
+        ]);
+    }
+
+    // Отправка сообщения по кнопке "Запчасти"
+    private function sendCategoryDetailMessage(int $chatId, int $message_id): void
+    {
+        $textMessage = TextMessagesService::getCategoryDetailMessage();
+        $text = $textMessage['text'];
+        $keyboard = $textMessage['keyboard'];
+        $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
+    }
+
+    // Отправка сообщения при выборе Запчасти-Запчасти
+    private function sendCategoryDetailDetailMessage(int $chatId, int $message_id): void
+    {
+        $text = TextMessagesService::getCategoryDetailDetailMessage();
+        $this->senderMessage->editMessage($chatId, $message_id, $text);
+
+        $stage = 'post_adv_category_detail_step1';
+        $adv_category = 'Запчасти';
+
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, [
+            'id_bot_user' => $user->id,
+            'adv_category' => $adv_category,
+        ]);
+    }
+
+    // Отправка сообщения при выборе Запчасти-Колёса
+    private function sendCategoryDetailWheelsMessage(int $chatId, int $message_id): void
+    {
+        $text = TextMessagesService::getCategoryDetailWheelsMessage();
+        $this->senderMessage->editMessage($chatId, $message_id, $text);
+
+        $stage = 'post_adv_category_detail_step1';
+        $adv_category = 'Колёса';
+
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, [
+            'id_bot_user' => $user->id,
+            'adv_category' => $adv_category,
+        ]);
+    }
+
+    // Отправка сообщения при выборе Запчасти-Аудио
+    private function sendCategoryDetailAudioMessage(int $chatId, int $message_id): void
+    {
+        $text = TextMessagesService::getCategoryDetailAudioMessage();
+        $this->senderMessage->editMessage($chatId, $message_id, $text);
+
+        $stage = 'post_adv_category_detail_step1';
+        $adv_category = 'Аудио';
+
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, [
+            'id_bot_user' => $user->id,
+            'adv_category' => $adv_category,
+        ]);
+    }
+
+    // Отправка сообщения при выборе Запчасти-Инструменты
+    private function sendCategoryDetailToolsMessage(int $chatId, int $message_id): void
+    {
+        $text = TextMessagesService::getCategoryDetailToolsMessage();
+        $this->senderMessage->editMessage($chatId, $message_id, $text);
+
+        $stage = 'post_adv_category_detail_step1';
+        $adv_category = 'Инструменты';
+
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, [
+            'id_bot_user' => $user->id,
+            'adv_category' => $adv_category,
+        ]);
+    }
+
+    // Отправка сообщения при выборе Запчасти-Другое
+    private function sendCategoryDetailOthersMessage(int $chatId, int $message_id): void
+    {
+        $text = TextMessagesService::getCategoryDetailOthersMessage();
+        $this->senderMessage->editMessage($chatId, $message_id, $text);
+
+        $stage = 'post_adv_category_detail_step1';
+        $adv_category = 'Другое';
 
         $user = $this->userRepository->findByChatId($chatId);
         $this->userRepository->updateUser($chatId, ['stage' => $stage]);

@@ -192,4 +192,97 @@ $temp_adv_row->adv_description
 
 <i>Например Audi RS7 \ Mercedes C180 \ BMW 3 \ Chevrolet Niva \ Ford Focus \ Hyundai Solaris \ Volkswagen Golf \ ВАЗ 2114</i>';
     }
+
+    public static function getCategoryDetailMessage(): array
+    {
+        $result = [];
+        $result['text'] = '🚦 <b>Категория</b>
+
+Выберите категорию объявления из представленных.';
+        $keyboard = [
+            [
+                [
+                    'text' => '⚙️ Запчасти',
+                    'callback_data' => 'category_detail_detail',
+                ],
+                [
+                    'text' => '⭕️ Колёса',
+                    'callback_data' => 'category_detail_wheels',
+                ],
+            ],
+            [
+                [
+                    'text' => '🔊 Аудио и видео',
+                    'callback_data' => 'category_detail_audio',
+                ],
+                [
+                    'text' => '🧰 Инструменты',
+                    'callback_data' => 'category_detail_tools',
+                ],
+            ],
+            [
+                [
+                    'text' => '📦 Другое',
+                    'callback_data' => 'category_detail_other',
+                ],
+            ],
+            [
+                [
+                    'text' => 'Главное меню',
+                    'callback_data' => 'back_main_menu',
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
+    }
+
+    public static function getCategoryDetailDetailMessage(): string
+    {
+        return '❔ <b>Название</b>
+
+Укажите короткое название объявления.
+
+<i>Фара левая на ваз 2114 \ Двигатель mercedes c180</i>';
+    }
+
+    public static function getCategoryDetailWheelsMessage(): string
+    {
+        return '❔ <b>Название</b>
+
+Укажите короткое название объявления.
+
+<i>диски R12 на ваз 2114 \ Зимняя резина </i>';
+    }
+
+    public static function getCategoryDetailAudioMessage(): string
+    {
+        return '❔ <b>Название</b>
+
+Укажите короткое название объявления.
+
+<i>Магнитола pioneer \ Динамики Pride Ruby </i>';
+    }
+
+    public static function getCategoryDetailToolsMessage(): string
+    {
+        return '❔ <b>Название</b>
+
+Укажите короткое название объявления.
+
+<i>Набор инструментов</i>';
+    }
+
+    public static function getCategoryDetailOthersMessage(): string
+    {
+        return '❔ <b>Название</b>
+
+Укажите короткое название объявления.
+
+<i>Накидки на сидения</i>';
+    }
 }
