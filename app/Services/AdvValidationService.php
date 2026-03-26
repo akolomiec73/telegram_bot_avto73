@@ -72,10 +72,11 @@ class AdvValidationService
         }
         $date_now = date('Y-m-d H:i:s');
         $diff = strtotime($date_post) - strtotime($date_now);
-        $count_minutes = abs(round($diff / 60));
-        if ($count_minutes < self::TIME_LIMIT_MINUTES) {
-            return false;
-        }
+        $count_minutes = (int) abs(round($diff / 60));
+        /* Некорректно, нужно переделать
+          if ($count_minutes < self::TIME_LIMIT_MINUTES) {
+           return false;
+        }*/
 
         return $count_minutes;
     }
