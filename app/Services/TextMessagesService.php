@@ -57,7 +57,7 @@ class TextMessagesService
 
     public static function getPriceMessage(): string
     {
-        return ' <b>Цена</b>
+        return '💲 <b>Цена</b>
 
 Укажите цену.';
     }
@@ -115,11 +115,16 @@ class TextMessagesService
 
     public static function getFullAdvMessage(object $temp_adv_row, string $username): string
     {
+        if ($temp_adv_row->adv_car_year_realise) {
+            $text_car_year = ", $temp_adv_row->adv_car_year_realise  г.";
+        } else {
+            $text_car_year = '';
+        }
         $simple_price = number_format($temp_adv_row->adv_price, 0, ',', ' ');
 
         return "<i>$temp_adv_row->adv_category > $temp_adv_row->adv_car_mark > </i>
 
-<b>$temp_adv_row->adv_car_mark, $temp_adv_row->adv_car_year_realise г.</b>
+<b>$temp_adv_row->adv_car_mark $text_car_year</b>
 
 💲 <b>$simple_price руб.</b>
 
