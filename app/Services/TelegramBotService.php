@@ -55,7 +55,7 @@ class TelegramBotService
             if (str_starts_with($text, '/')) {  // Если сообщение — команда (начинается с /)
                 $this->handleCommand($chatId, $text, $username, $message_id);
             } elseif ($callbackQuery) {  // обработка нажатий кнопок
-                $this->handleCallback($chatId, $text, $username, $callbackQuery, $message_id);
+                $this->handleCallback($chatId, $username, $callbackQuery, $message_id);
             } else {  // Иначе — обычный текст
                 $this->handleText($chatId, $text);
             }
@@ -166,39 +166,42 @@ class TelegramBotService
     }
 
     // обработчик callback
-    private function handleCallback(int $chatId, string $text, string $username, object $callbackQuery, int $message_id): void
+    private function handleCallback(int $chatId, string $username, object $callbackQuery, int $message_id): void
     {
-        $data = $callbackQuery->getData();
-
-        switch ($data) {
-            case 'post_adv':
+        switch ($callbackQuery->getData()) {
+            case UserStages::BUTTON_POST_ADV:
                 $this->sendPostMessage($chatId, $message_id);
                 break;
-            case 'category_car':
+            case UserStages::BUTTON_CATEGORY_CAR:
                 $this->sendCategoryCarMessage($chatId, $message_id);
                 break;
-            case 'category_detail':
+            case UserStages::BUTTON_CATEGORY_DETAIL:
                 $this->sendCategoryDetailMessage($chatId, $message_id);
                 break;
-            case 'category_detail_detail':
-                $this->sendCategoryDetailDetailMessage($chatId, $message_id);
+            case UserStages::BUTTON_CATEGORY_DETAIL_DETAIL:
+                $text_message = TextMessagesService::getCategoryDetailDetailMessage();
+                $this->handleDetailCallback($callbackQuery->getData(), $chatId, $message_id, $text_message);
                 break;
-            case 'category_detail_wheels':
-                $this->sendCategoryDetailWheelsMessage($chatId, $message_id);
+            case UserStages::BUTTON_CATEGORY_DETAIL_WHEELS:
+                $text_message = TextMessagesService::getCategoryDetailWheelsMessage();
+                $this->handleDetailCallback($callbackQuery->getData(), $chatId, $message_id, $text_message);
                 break;
-            case 'category_detail_audio':
-                $this->sendCategoryDetailAudioMessage($chatId, $message_id);
+            case UserStages::BUTTON_CATEGORY_DETAIL_AUDIO:
+                $text_message = TextMessagesService::getCategoryDetailAudioMessage();
+                $this->handleDetailCallback($callbackQuery->getData(), $chatId, $message_id, $text_message);
                 break;
-            case 'category_detail_tools':
-                $this->sendCategoryDetailToolsMessage($chatId, $message_id);
+            case UserStages::BUTTON_CATEGORY_DETAIL_TOOLS:
+                $text_message = TextMessagesService::getCategoryDetailToolsMessage();
+                $this->handleDetailCallback($callbackQuery->getData(), $chatId, $message_id, $text_message);
                 break;
-            case 'category_detail_others':
-                $this->sendCategoryDetailOthersMessage($chatId, $message_id);
+            case UserStages::BUTTON_CATEGORY_DETAIL_OTHER:
+                $text_message = TextMessagesService::getCategoryDetailOthersMessage();
+                $this->handleDetailCallback($callbackQuery->getData(), $chatId, $message_id, $text_message);
                 break;
             case 'search_adv':
                 $this->senderMessage->sendMessage($chatId, 'search_adv');
                 break;
-            case 'back_main_menu':
+            case UserStages::BUTTON_BACK_MAIN_MENU:
                 $this->sendWelcomeMessage($chatId, $username, $message_id, false);
                 break;
             default:
@@ -259,78 +262,18 @@ class TelegramBotService
         $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
     }
 
-    // Отправка сообщения при выборе Запчасти-Запчасти
-    private function sendCategoryDetailDetailMessage(int $chatId, int $message_id): void
+    // Обработчик callback для категории Запчасти
+    private function handleDetailCallback(string $button_name, int $chatId, int $message_id, string $text_message): void
     {
-        $text = TextMessagesService::getCategoryDetailDetailMessage();
-        $this->senderMessage->editMessage($chatId, $message_id, $text);
-
-        $adv_category = 'Запчасти';
-
-        $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
-        $this->userRepository->updateTempAdv($user->id, [
-            'id_bot_user' => $user->id,
-            'adv_category' => $adv_category,
-        ]);
-    }
-
-    // Отправка сообщения при выборе Запчасти-Колёса
-    private function sendCategoryDetailWheelsMessage(int $chatId, int $message_id): void
-    {
-        $text = TextMessagesService::getCategoryDetailWheelsMessage();
-        $this->senderMessage->editMessage($chatId, $message_id, $text);
-
-        $adv_category = 'Колёса';
-
-        $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
-        $this->userRepository->updateTempAdv($user->id, [
-            'id_bot_user' => $user->id,
-            'adv_category' => $adv_category,
-        ]);
-    }
-
-    // Отправка сообщения при выборе Запчасти-Аудио
-    private function sendCategoryDetailAudioMessage(int $chatId, int $message_id): void
-    {
-        $text = TextMessagesService::getCategoryDetailAudioMessage();
-        $this->senderMessage->editMessage($chatId, $message_id, $text);
-
-        $adv_category = 'Аудио';
-
-        $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
-        $this->userRepository->updateTempAdv($user->id, [
-            'id_bot_user' => $user->id,
-            'adv_category' => $adv_category,
-        ]);
-    }
-
-    // Отправка сообщения при выборе Запчасти-Инструменты
-    private function sendCategoryDetailToolsMessage(int $chatId, int $message_id): void
-    {
-        $text = TextMessagesService::getCategoryDetailToolsMessage();
-        $this->senderMessage->editMessage($chatId, $message_id, $text);
-
-        $adv_category = 'Инструменты';
-
-        $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
-        $this->userRepository->updateTempAdv($user->id, [
-            'id_bot_user' => $user->id,
-            'adv_category' => $adv_category,
-        ]);
-    }
-
-    // Отправка сообщения при выборе Запчасти-Другое
-    private function sendCategoryDetailOthersMessage(int $chatId, int $message_id): void
-    {
-        $text = TextMessagesService::getCategoryDetailOthersMessage();
-        $this->senderMessage->editMessage($chatId, $message_id, $text);
-
-        $adv_category = 'Другое';
-
+        $this->senderMessage->editMessage($chatId, $message_id, $text_message);
+        $adv_category = match ($button_name) {
+            UserStages::BUTTON_CATEGORY_DETAIL_DETAIL => UserStages::CATEGORY_NAME_DETAIL,
+            UserStages::BUTTON_CATEGORY_DETAIL_WHEELS => UserStages::CATEGORY_NAME_WHEELS,
+            UserStages::BUTTON_CATEGORY_DETAIL_AUDIO => UserStages::CATEGORY_NAME_AUDIO,
+            UserStages::BUTTON_CATEGORY_DETAIL_TOOLS => UserStages::CATEGORY_NAME_TOOLS,
+            UserStages::BUTTON_CATEGORY_DETAIL_OTHER => UserStages::CATEGORY_NAME_OTHERS,
+            default => null,
+        };
         $user = $this->userRepository->findByChatId($chatId);
         $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
         $this->userRepository->updateTempAdv($user->id, [
