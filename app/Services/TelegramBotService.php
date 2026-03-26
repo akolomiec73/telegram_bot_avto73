@@ -13,7 +13,7 @@ use Telegram\Bot\Api;
 
 class TelegramBotService
 {
-    protected Api $telegram;  // Экземпляр API Telegram
+    protected Api $telegram;
 
     protected SenderService $senderMessage;
 
@@ -83,25 +83,11 @@ class TelegramBotService
                 switch ($user->stage) {
                     case UserStages::POST_ADV_STEP1:
                         $mark = $text; // нет валидации, потому что здесь будут массивы по маркам, что бы однообразно и красиво выбирать марку
-
-                        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP2]);
-                        $this->userRepository->updateTempAdv($user->id, [
-                            'id_bot_user' => $user->id,
-                            'adv_car_mark' => $mark,
-                        ]);
-
-                        $text = TextMessagesService::getCarYearMessage();
-                        $this->senderMessage->sendMessage($chatId, $text);
+                        $this->handleStage($mark, UserStages::POST_ADV_STEP2, 'adv_car_mark', $chatId);
                         break;
                     case UserStages::POST_ADV_STEP2:
                         if ($this->validator->validateCarYear($text)) {
-                            $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP3]);
-                            $this->userRepository->updateTempAdv($user->id, [
-                                'id_bot_user' => $user->id,
-                                'adv_car_year_realise' => $text,
-                            ]);
-                            $text = TextMessagesService::getPriceMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
+                            $this->handleStage($text, UserStages::POST_ADV_STEP3, 'adv_car_year_realise', $chatId);
                         } else {
                             $text = TextMessagesService::getCorrectCarYearMessage();
                             $this->senderMessage->sendMessage($chatId, $text);
@@ -109,13 +95,7 @@ class TelegramBotService
                         break;
                     case UserStages::POST_ADV_STEP3:
                         if ($this->validator->validatePrice($text)) {
-                            $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP4]);
-                            $this->userRepository->updateTempAdv($user->id, [
-                                'id_bot_user' => $user->id,
-                                'adv_price' => $text,
-                            ]);
-                            $text = TextMessagesService::getDescriptionMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
+                            $this->handleStage($text, UserStages::POST_ADV_STEP4, 'adv_price', $chatId);
                         } else {
                             $text = TextMessagesService::getCorrectPriceMessage();
                             $this->senderMessage->sendMessage($chatId, $text);
@@ -123,63 +103,54 @@ class TelegramBotService
                         break;
                     case UserStages::POST_ADV_STEP4:
                         if ($this->validator->validateDescription($text)) {
-                            $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP5]);
-                            $this->userRepository->updateTempAdv($user->id, [
-                                'id_bot_user' => $user->id,
-                                'adv_description' => $text,
-                            ]);
-                            $text = TextMessagesService::getPhotoMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
+                            $this->handleStage($text, UserStages::POST_ADV_STEP5, 'adv_description', $chatId);
                         } else {
                             $text = TextMessagesService::getCorrectDescriptionMessage();
                             $this->senderMessage->sendMessage($chatId, $text);
                         }
                         break;
                     case UserStages::POST_ADV_STEP5:
-                        $update = $this->telegram->getWebhookUpdate(); // Получаем обновление от Telegram
-                        $message = $update->getMessage();
-                        $photo = $message->getPhoto();
+                        $photo = $this->telegram->getWebhookUpdate()->getMessage()->getPhoto();
+                        $FileId = $photo[count($photo) - 1]->getFileId();
                         if ($photo) {
-                            $count_minutes = $this->validator->validateTimeLimit($user->date_send_add);
-                            if ($count_minutes) {
-                                $FileId = $photo[count($photo) - 1]->getFileId();
-                                $stage = '';
-
-                                $this->userRepository->updateUser($chatId, [
-                                    'stage' => $stage,
-                                    'date_send_add' => date('Y-m-d H:i:s'),
-                                ]);
-                                $this->userRepository->updateTempAdv($user->id, [
-                                    'id_bot_user' => $user->id,
-                                    'adv_photo' => $FileId,
-                                ]);
-
-                                if ($user->username == '') {
-                                    $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP6]);
-
-                                    $text = TextMessagesService::getContactMessage();
-                                    $this->senderMessage->sendMessage($chatId, $text);
-                                } else {
-                                    $temp_adv_row = $this->userRepository->getAdvRow($chatId);
-                                    $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $user->username);
-
-                                    $this->senderMessage->sendMessageInPublic($FileId, $text_adv); // отправка поста в паблик
-                                    /*
-                                     * тут логика отправки пользователям по фильтрам
-                                     * $bot->sendPhoto($users_arr[$i]['id_user'], $res_query['add_photo'], $text_add,null,null,false, 'HTML');
-                                     */
-                                    $textMessage = TextMessagesService::getFinishMessage();
-                                    $text = $textMessage['text'];
-                                    $keyboard = $textMessage['keyboard'];
-
-                                    $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
-                                }
+                            if ($user->username == '') {
+                                $this->handleStage($FileId, UserStages::POST_ADV_STEP6, 'adv_photo', $chatId);
                             } else {
-                                $text = TextMessagesService::getTimeLimitMessage($count_minutes);
-                                $this->senderMessage->sendMessage($chatId, $text);
+                                $this->handleStage($FileId, '', 'adv_photo', $chatId);
+                                $this->finishAdv($chatId);
                             }
                         } else {
                             $text = 'Отправьте фотографию, а не файл\текст';
+                            $this->senderMessage->sendMessage($chatId, $text);
+                        }
+                        break;
+                    case UserStages::POST_ADV_STEP6:
+                        // добавить валидацию на доп контакт
+                        $this->handleStage($text, '', 'adv_extra_contact', $chatId);
+                        $this->finishAdv($chatId);
+                        break;
+                    case UserStages::POST_ADV_DETAIL_STEP1:
+                        // добавить валидацию на проверку Названия объявления
+                        $this->handleStage($text, UserStages::POST_ADV_DETAIL_STEP2, 'adv_car_mark', $chatId);
+                        break;
+                    case UserStages::POST_ADV_DETAIL_STEP2:
+                        if ($this->validator->validatePrice($text)) {
+                            $this->handleStage($text, UserStages::POST_ADV_DETAIL_STEP3, 'adv_price', $chatId);
+                        } else {
+                            $text = TextMessagesService::getCorrectPriceMessage();
+                            $this->senderMessage->sendMessage($chatId, $text);
+                        }
+                        break;
+                    case UserStages::POST_ADV_DETAIL_STEP3:
+                        if ($this->validator->validateDescription($text)) {
+                            if ($user->username == '') {
+                                $this->handleStage($text, UserStages::POST_ADV_STEP6, 'adv_description', $chatId);
+                            } else {
+                                $this->handleStage($text, '', 'adv_description', $chatId);
+                                $this->finishAdv($chatId);
+                            }
+                        } else {
+                            $text = TextMessagesService::getCorrectDescriptionMessage();
                             $this->senderMessage->sendMessage($chatId, $text);
                         }
                         break;
@@ -297,7 +268,7 @@ class TelegramBotService
         $adv_category = 'Запчасти';
 
         $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP1]);
+        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
         $this->userRepository->updateTempAdv($user->id, [
             'id_bot_user' => $user->id,
             'adv_category' => $adv_category,
@@ -313,7 +284,7 @@ class TelegramBotService
         $adv_category = 'Колёса';
 
         $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP1]);
+        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
         $this->userRepository->updateTempAdv($user->id, [
             'id_bot_user' => $user->id,
             'adv_category' => $adv_category,
@@ -329,7 +300,7 @@ class TelegramBotService
         $adv_category = 'Аудио';
 
         $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP1]);
+        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
         $this->userRepository->updateTempAdv($user->id, [
             'id_bot_user' => $user->id,
             'adv_category' => $adv_category,
@@ -345,7 +316,7 @@ class TelegramBotService
         $adv_category = 'Инструменты';
 
         $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP1]);
+        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
         $this->userRepository->updateTempAdv($user->id, [
             'id_bot_user' => $user->id,
             'adv_category' => $adv_category,
@@ -361,10 +332,53 @@ class TelegramBotService
         $adv_category = 'Другое';
 
         $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_STEP1]);
+        $this->userRepository->updateUser($chatId, ['stage' => UserStages::POST_ADV_DETAIL_STEP1]);
         $this->userRepository->updateTempAdv($user->id, [
             'id_bot_user' => $user->id,
             'adv_category' => $adv_category,
         ]);
+    }
+
+    // Обработчик стадии
+    private function handleStage(string $text, string $stage, string $column_name, int $chatId): void
+    {
+        $text_message = match ($stage) {
+            UserStages::POST_ADV_STEP2 => TextMessagesService::getCarYearMessage(),
+            UserStages::POST_ADV_STEP3, UserStages::POST_ADV_DETAIL_STEP2 => TextMessagesService::getPriceMessage(),
+            UserStages::POST_ADV_STEP4, UserStages::POST_ADV_DETAIL_STEP3 => TextMessagesService::getDescriptionMessage(),
+            UserStages::POST_ADV_STEP5 => TextMessagesService::getPhotoMessage(),
+            UserStages::POST_ADV_STEP6 => TextMessagesService::getContactMessage(),
+            default => null,
+        };
+        $user = $this->userRepository->findByChatId($chatId);
+        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+        $this->userRepository->updateTempAdv($user->id, ['id_bot_user' => $user->id, $column_name => $text]);
+        if ($text_message !== null) {
+            $this->senderMessage->sendMessage($chatId, $text_message);
+        }
+    }
+
+    // Публикация объявления
+    private function finishAdv(int $chatId): void
+    {
+        $user = $this->userRepository->findByChatId($chatId);
+        $count_minutes = $this->validator->validateTimeLimit($user->date_send_add);
+        if ($count_minutes) {
+            $this->userRepository->updateUser($chatId, ['date_send_add' => date('Y-m-d H:i:s')]);
+            $temp_adv_row = $this->userRepository->getAdvRow($chatId);
+            $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $user->username);
+            $this->senderMessage->sendPostInPublic($temp_adv_row->adv_photo, $text_adv);
+            /*
+             * тут будет логика отправки пользователям по фильтрам
+             *
+             */
+            $textMessage = TextMessagesService::getFinishMessage();
+            $text = $textMessage['text'];
+            $keyboard = $textMessage['keyboard'];
+            $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
+        } else {
+            $text = TextMessagesService::getTimeLimitMessage($count_minutes);
+            $this->senderMessage->sendMessage($chatId, $text);
+        }
     }
 }
