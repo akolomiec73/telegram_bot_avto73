@@ -75,30 +75,29 @@ class SenderService
         }
     }
 
-    public function sendPhotoInPublic(string $fileId, string $text): void
+    public function sendPostInPublic(?string $fileId, string $text): void
     {
-        try {
-            $this->telegram->sendPhoto([
-                'chat_id' => $this->publicGroupId,
-                'photo' => $fileId,
-                'caption' => $text,
-                'parse_mode' => 'HTML',
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Telegram sendPhotoInPublic failed: '.$e->getMessage());
-        }
-    }
-
-    public function sendMessageInPublic(string $text): void
-    {
-        try {
-            $this->telegram->sendPhoto([
-                'chat_id' => $this->publicGroupId,
-                'text' => $text,
-                'parse_mode' => 'HTML',
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Telegram sendMessageInPublic failed: '.$e->getMessage());
+        if ($fileId !== null) {
+            try {
+                $this->telegram->sendPhoto([
+                    'chat_id' => $this->publicGroupId,
+                    'photo' => $fileId,
+                    'caption' => $text,
+                    'parse_mode' => 'HTML',
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Telegram sendPhoto failed: '.$e->getMessage());
+            }
+        } else {
+            try {
+                $this->telegram->sendMessage([
+                    'chat_id' => $this->publicGroupId,
+                    'text' => $text,
+                    'parse_mode' => 'HTML',
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Telegram sendMessage failed: '.$e->getMessage());
+            }
         }
     }
 }
