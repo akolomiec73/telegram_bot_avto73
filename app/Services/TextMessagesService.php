@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Constant\UserStages;
+
 class TextMessagesService
 {
     public static function getStartMessage(): array
@@ -24,11 +26,11 @@ class TextMessagesService
             [
                 [
                     'text' => 'Подать объявление',
-                    'callback_data' => 'post_adv',
+                    'callback_data' => UserStages::BUTTON_POST_ADV,
                 ],
                 [
                     'text' => 'Найти объявление',
-                    'callback_data' => 'search_adv',
+                    'callback_data' => UserStages::BUTTON_SEARCH_ADV,
                 ],
             ],
             [
@@ -143,7 +145,7 @@ $temp_adv_row->adv_description
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => 'back_main_menu',
+                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -167,17 +169,17 @@ $temp_adv_row->adv_description
             [
                 [
                     'text' => '🚗 Транспорт',
-                    'callback_data' => 'category_car',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_CAR,
                 ],
                 [
                     'text' => '⚙️ Запчасти',
-                    'callback_data' => 'category_detail',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL,
                 ],
             ],
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => 'back_main_menu',
+                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -208,33 +210,33 @@ $temp_adv_row->adv_description
             [
                 [
                     'text' => '⚙️ Запчасти',
-                    'callback_data' => 'category_detail_detail',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_DETAIL,
                 ],
                 [
                     'text' => '⭕️ Колёса',
-                    'callback_data' => 'category_detail_wheels',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_WHEELS,
                 ],
             ],
             [
                 [
                     'text' => '🔊 Аудио и видео',
-                    'callback_data' => 'category_detail_audio',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_AUDIO,
                 ],
                 [
                     'text' => '🧰 Инструменты',
-                    'callback_data' => 'category_detail_tools',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_TOOLS,
                 ],
             ],
             [
                 [
                     'text' => '📦 Другое',
-                    'callback_data' => 'category_detail_other',
+                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_OTHER,
                 ],
             ],
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => 'back_main_menu',
+                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
                 ],
             ],
         ];
