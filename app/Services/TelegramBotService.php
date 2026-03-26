@@ -38,27 +38,20 @@ class TelegramBotService
     {
         $update = $this->telegram->getWebhookUpdate(); // Получаем обновление от Telegram
         $message = $update->getMessage();
-        if (! $message) {
-            return;
-        }  // Если сообщения нет (например, событие о добавлении в чат), выходим
-        $callbackQuery = $update->getCallbackQuery();
-        $chatId = $message->getChat()->getId();
         $text = $message->getText();
+        $chatId = $message->getChat()->getId();
         $message_id = $message->getMessageId(); // id message для изменений
-        $username = $message->getChat()->getUsername();
-        $photo = $message->getPhoto();
+        $username = $message->getChat()->getUsername() ?? 'unknown';
 
-        // Определяем тип сообщения и вызываем соответствующий обработчик
-        if ($photo) { // костыль для орбаботки фото, надо исправить
+        if ($update->getCallbackQuery()) {  // обработка нажатий кнопок
+            $this->handleCallback($chatId, $username, $update->getCallbackQuery(), $message_id);
+        } elseif ($text !== null && str_starts_with($text, '/')) {  // Если сообщение — команда (начинается с /)
+            $this->handleCommand($chatId, $text, $username, $message_id);
+        } elseif ($text !== null || $message->getPhoto()) { // Иначе — обычный текст + обработка фото
             $this->handleText($chatId, $text);
-        } else {
-            if (str_starts_with($text, '/')) {  // Если сообщение — команда (начинается с /)
-                $this->handleCommand($chatId, $text, $username, $message_id);
-            } elseif ($callbackQuery) {  // обработка нажатий кнопок
-                $this->handleCallback($chatId, $username, $callbackQuery, $message_id);
-            } else {  // Иначе — обычный текст
-                $this->handleText($chatId, $text);
-            }
+        } else { // Если попытаются отправить файл, стикер, видео
+            $this->senderMessage->sendMessage($chatId, 'Бот принимает только текстовые сообщения и команды.');
+            \Log::debug('Пользователь отправил файл\стикер\видео', ['chat_id' => $chatId, 'message_id' => $message_id]);
         }
     }
 
@@ -155,7 +148,7 @@ class TelegramBotService
                         }
                         break;
                     default:
-                        $this->senderMessage->sendMessage($chatId, "Неопределённый stage: $user->stage");
+                        $this->senderMessage->sendMessage($chatId, 'Неопределённый stage');
                 }
             } else {
                 \Log::warning('User not found for chat_id: '.$chatId);
