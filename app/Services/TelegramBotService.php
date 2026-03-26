@@ -208,17 +208,18 @@ class TelegramBotService
         $textMessage = TextMessagesService::getStartMessage();
         $text = $textMessage['text'];
         $keyboard = $textMessage['keyboard'];
-
         if ($isFirstMessage) {
             $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
         } else {
             $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
         }
-
-        $this->userRepository->updateUser($chatId, [
-            'username' => $username,
-            'stage' => '',
-        ]);
+        $user = $this->userRepository->findByChatId($chatId);
+        if (! $user || $user->stage !== '') {
+            $this->userRepository->updateUser($chatId, [
+                'username' => $username,
+                'stage' => '',
+            ]);
+        }
     }
 
     // Отправка сообщения о подаче объявления
