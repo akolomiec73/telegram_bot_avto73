@@ -13,6 +13,8 @@ class AdvValidationService
 
     private const MAX_DESCRIPTION_LENGTH = 1000;
 
+    private const MAX_CONTACT_LENGTH = 100;
+
     private const TIME_LIMIT_MINUTES = 720;
 
     private const ALLOWED_TAGS = '<b><i><u><strong><em>';
@@ -33,33 +35,67 @@ class AdvValidationService
     /**
      * Валидация года выпуска авто (4 цифры)
      */
-    public function validateCarYear(?string $year): bool
+    public function validateCarYear(?string $year): array
     {
-        if (empty($year)) {
-            return false;
-        }
+        $resultValidate['message'] = TextMessagesService::getCorrectCarYearMessage();
+        $resultValidate['result'] = ! empty($year) && preg_match('#^[0-9]{4}$#', $year) === 1;
 
-        return preg_match('#^[0-9]{4}$#', $year) === 1;
+        return $resultValidate;
     }
 
     /**
      * Валидация цены (положительное число)
      */
-    public function validatePrice(?string $price): bool
+    public function validatePrice(?string $price): array
     {
-        if (empty($price)) {
-            return false;
-        }
+        $resultValidate['message'] = TextMessagesService::getCorrectPriceMessage();
+        $resultValidate['result'] = ! empty($price) && is_numeric($price) && (float) $price > self::MIN_PRICE;
 
-        return is_numeric($price) && (float) $price > self::MIN_PRICE;
+        return $resultValidate;
     }
 
     /**
      * Валидация описания (не пустое, длина до 1000 символов)
      */
-    public function validateDescription(?string $description): bool
+    public function validateDescription(?string $description): array
     {
-        return ! empty($description) && mb_strlen($description, 'UTF-8') <= self::MAX_DESCRIPTION_LENGTH;
+        $resultValidate['message'] = TextMessagesService::getCorrectDescriptionMessage();
+        $resultValidate['result'] = ! empty($description) && mb_strlen($description, 'UTF-8') <= self::MAX_DESCRIPTION_LENGTH;
+
+        return $resultValidate;
+    }
+
+    /**
+     * Валидация фото (не пустое)
+     */
+    public function validateIsPhoto(?string $fileId): array
+    {
+        $resultValidate['message'] = 'Отправьте фотографию, а не файл\текст';
+        $resultValidate['result'] = ! empty($fileId);
+
+        return $resultValidate;
+    }
+
+    /**
+     * Валидация доп контактов (не пустое не более 100 символов)
+     */
+    public function validateExtraContact(?string $text): array
+    {
+        $resultValidate['message'] = 'Отправьте текст, не более 100 символов';
+        $resultValidate['result'] = ! empty($text) && mb_strlen($text, 'UTF-8') <= self::MAX_CONTACT_LENGTH;
+
+        return $resultValidate;
+    }
+
+    /**
+     * Валидация названия для запчастей (не пустое не более 100 символов)
+     */
+    public function validateTitle(?string $text): array
+    {
+        $resultValidate['message'] = 'Отправьте текст, не более 100 символов';
+        $resultValidate['result'] = ! empty($text) && mb_strlen($text, 'UTF-8') <= self::MAX_CONTACT_LENGTH;
+
+        return $resultValidate;
     }
 
     /**
