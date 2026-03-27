@@ -74,87 +74,43 @@ class TelegramBotService
             $user = $this->userRepository->findByChatId($chatId);
             if ($user !== null) {
                 switch ($user->stage) {
-                    case UserStages::POST_ADV_STEP1:
-                        $mark = $text; // нет валидации, потому что здесь будут массивы по маркам, что бы однообразно и красиво выбирать марку
-                        $this->handleStage($mark, UserStages::POST_ADV_STEP2, 'adv_car_mark', $chatId);
+                    case UserStages::POST_ADV_STEP1: // получаем марку(название)
+                        $this->handleStage($text, UserStages::POST_ADV_STEP2, 'adv_car_mark', $chatId);
                         break;
-                    case UserStages::POST_ADV_STEP2:
-                        if ($this->validator->validateCarYear($text)) {
-                            $this->handleStage($text, UserStages::POST_ADV_STEP3, 'adv_car_year_realise', $chatId);
-                        } else {
-                            $text = TextMessagesService::getCorrectCarYearMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
-                        }
+                    case UserStages::POST_ADV_STEP2: // получаем год выпуска
+                        $this->handleStage($text, UserStages::POST_ADV_STEP3, 'adv_car_year_realise', $chatId);
                         break;
-                    case UserStages::POST_ADV_STEP3:
-                        if ($this->validator->validatePrice($text)) {
-                            $this->handleStage($text, UserStages::POST_ADV_STEP4, 'adv_price', $chatId);
-                        } else {
-                            $text = TextMessagesService::getCorrectPriceMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
-                        }
-                        break;
-                    case UserStages::POST_ADV_STEP4:
-                        if ($this->validator->validateDescription($text)) {
-                            $this->handleStage($text, UserStages::POST_ADV_STEP5, 'adv_description', $chatId);
-                        } else {
-                            $text = TextMessagesService::getCorrectDescriptionMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
-                        }
-                        break;
-                    case UserStages::POST_ADV_STEP5:
-                        $photo = $this->telegram->getWebhookUpdate()->getMessage()->getPhoto();
-                        $FileId = $photo[count($photo) - 1]->getFileId();
-                        if ($photo) {
-                            if ($user->username == '') {
-                                $this->handleStage($FileId, UserStages::POST_ADV_STEP6, 'adv_photo', $chatId);
-                            } else {
-                                $this->handleStage($FileId, '', 'adv_photo', $chatId);
-                                $this->finishAdv($chatId);
-                            }
-                        } else {
-                            $text = 'Отправьте фотографию, а не файл\текст';
-                            $this->senderMessage->sendMessage($chatId, $text);
-                        }
-                        break;
-                    case UserStages::POST_ADV_STEP6:
-                        // добавить валидацию на доп контакт
-                        $this->handleStage($text, '', 'adv_extra_contact', $chatId);
-                        $this->finishAdv($chatId);
-                        break;
-                    case UserStages::POST_ADV_DETAIL_STEP1:
-                        // добавить валидацию на проверку Названия объявления
-                        $this->handleStage($text, UserStages::POST_ADV_DETAIL_STEP2, 'adv_car_mark', $chatId);
-                        break;
+                    case UserStages::POST_ADV_STEP3: // получаем цену
                     case UserStages::POST_ADV_DETAIL_STEP2:
-                        if ($this->validator->validatePrice($text)) {
-                            $this->handleStage($text, UserStages::POST_ADV_DETAIL_STEP3, 'adv_price', $chatId);
+                        $this->handleStage($text, UserStages::POST_ADV_STEP4, 'adv_price', $chatId);
+                        break;
+                    case UserStages::POST_ADV_STEP4: // получаем описание
+                        $this->handleStage($text, UserStages::POST_ADV_STEP5, 'adv_description', $chatId);
+                        break;
+                    case UserStages::POST_ADV_STEP5: // получаем фотку
+                        $photo = $this->telegram->getWebhookUpdate()->getMessage()->getPhoto();
+                        $fileId = $photo[count($photo) - 1]->getFileId();
+                        if ($user->username) {
+                            $this->handleStage($fileId, '', 'adv_photo', $chatId);
                         } else {
-                            $text = TextMessagesService::getCorrectPriceMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
+                            $this->handleStage($fileId, UserStages::POST_ADV_STEP6, 'adv_photo', $chatId);
                         }
                         break;
-                    case UserStages::POST_ADV_DETAIL_STEP3:
-                        if ($this->validator->validateDescription($text)) {
-                            if ($user->username == '') {
-                                $this->handleStage($text, UserStages::POST_ADV_STEP6, 'adv_description', $chatId);
-                            } else {
-                                $this->handleStage($text, '', 'adv_description', $chatId);
-                                $this->finishAdv($chatId);
-                            }
-                        } else {
-                            $text = TextMessagesService::getCorrectDescriptionMessage();
-                            $this->senderMessage->sendMessage($chatId, $text);
-                        }
+                    case UserStages::POST_ADV_STEP6: // получаем доп контакты
+                        $this->handleStage($text, UserStages::POST_ADV_STEP7, 'adv_extra_contact', $chatId);
+                        break;
+                    case UserStages::POST_ADV_DETAIL_STEP1: // получаем Название запчасти
+                        $this->handleStage($text, UserStages::POST_ADV_DETAIL_STEP2, 'adv_car_mark', $chatId);
                         break;
                     default:
                         $this->senderMessage->sendMessage($chatId, 'Неопределённый stage');
                 }
             } else {
-                \Log::warning('User not found for chat_id: '.$chatId);
+                \Log::warning('User не найден: '.$chatId);
             }
         } else {
             $this->senderMessage->sendMessage($chatId, 'Некорректный текст сообщения');
+            \Log::warning("User: $chatId отправил некорректный текст: $text");
         }
     }
 
@@ -279,19 +235,20 @@ class TelegramBotService
     // Обработчик стадии
     private function handleStage(string $text, string $stage, string $column_name, int $chatId): void
     {
-        $text_message = match ($stage) {
-            UserStages::POST_ADV_STEP2 => TextMessagesService::getCarYearMessage(),
-            UserStages::POST_ADV_STEP3, UserStages::POST_ADV_DETAIL_STEP2 => TextMessagesService::getPriceMessage(),
-            UserStages::POST_ADV_STEP4, UserStages::POST_ADV_DETAIL_STEP3 => TextMessagesService::getDescriptionMessage(),
-            UserStages::POST_ADV_STEP5 => TextMessagesService::getPhotoMessage(),
-            UserStages::POST_ADV_STEP6 => TextMessagesService::getContactMessage(),
-            default => null,
-        };
-        $user = $this->userRepository->findByChatId($chatId);
-        $this->userRepository->updateUser($chatId, ['stage' => $stage]);
-        $this->userRepository->updateTempAdv($user->id, ['id_bot_user' => $user->id, $column_name => $text]);
-        if ($text_message !== null) {
-            $this->senderMessage->sendMessage($chatId, $text_message);
+        $validated = $this->validateStage($stage, $text);
+        if ($validated['result']) {
+            $text_message = $this->getTextMessageForStage($stage);
+            $user = $this->userRepository->findByChatId($chatId);
+            $this->userRepository->updateUser($chatId, ['stage' => $stage]);
+            $this->userRepository->updateTempAdv($user->id, ['id_bot_user' => $user->id, $column_name => $text]);
+            if ($text_message !== null) {
+                $this->senderMessage->sendMessage($chatId, $text_message);
+            }
+            if ($stage == '' || $stage == UserStages::POST_ADV_STEP7) {
+                $this->finishAdv($chatId);
+            }
+        } else {
+            $this->senderMessage->sendMessage($chatId, $validated['message']);
         }
     }
 
@@ -317,5 +274,33 @@ class TelegramBotService
             $text = TextMessagesService::getTimeLimitMessage($count_minutes);
             $this->senderMessage->sendMessage($chatId, $text);
         }
+    }
+
+    // Валидация стадии
+    private function validateStage(string $stage, string $text): array
+    {
+        return match ($stage) {
+            UserStages::POST_ADV_STEP2 => ['result' => true, 'message' => null], // title пока не валидируем
+            UserStages::POST_ADV_STEP3 => $this->validator->validateCarYear($text),
+            UserStages::POST_ADV_STEP4 => $this->validator->validatePrice($text),
+            UserStages::POST_ADV_STEP5 => $this->validator->validateDescription($text),
+            UserStages::POST_ADV_STEP6, '' => $this->validator->validateIsPhoto($text),
+            UserStages::POST_ADV_STEP7 => $this->validator->validateExtraContact($text),
+            UserStages::POST_ADV_DETAIL_STEP2 => $this->validator->validateTitle($text),
+            default => ['result' => false, 'message' => 'Не смог определить правило валидации'],
+        };
+    }
+
+    // Получение текста сообщения в handleStage
+    private function getTextMessageForStage(?string $stage): ?string
+    {
+        return match ($stage) {
+            UserStages::POST_ADV_STEP2 => TextMessagesService::getCarYearMessage(),
+            UserStages::POST_ADV_STEP3, UserStages::POST_ADV_DETAIL_STEP2 => TextMessagesService::getPriceMessage(),
+            UserStages::POST_ADV_STEP4 => TextMessagesService::getDescriptionMessage(),
+            UserStages::POST_ADV_STEP5 => TextMessagesService::getPhotoMessage(),
+            UserStages::POST_ADV_STEP6 => TextMessagesService::getContactMessage(),
+            default => null,
+        };
     }
 }
