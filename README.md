@@ -9,7 +9,8 @@
 ## **Стек:**
 * PHP 8.2
 * Фреймворк Laravel 12
-* В качестве БД используется MySQL
+* MySQL
+* Redis в качестве кеша
 * Библиотека по работе с Telegram API - Telegram Bot SDK
 * Используется форматер кода laravel pint
 
@@ -18,16 +19,21 @@
 ## Архитектурные решения:
 * Использует Eloquent ORM (2 таблицы связь 1 к 1)
 * Основная бизнес логика вынесена в TelegramBotService
+* Использует Redis для кеширования стадии пользователя и username
+* Сервисный слой для координации основной DB и Redis
 
 
 ## Структура проекта:
 * `app/Constant` - Константы (стадии пользователя, наименования подкатегорий)
 * `app/Http/Controllers/TelegramBotController.php` - Основной контроллер
 * `app/Models/` - Модели для 2 таблиц
-* `app/Providers/AppServiceProvider.php` - Глобальные настойки приложения (путь к public_gropu_id)
-* `app/Repositories/Contracts/UserRepositoryInterface.php` - Интерфейс по работе с бд
-* `app/Repositories/EloquentUserRepository.php` - Класс описывающий методы по работе с таблицами
-* `app/Services/AdvValidationService.php` - Сервис кастомной валидации
-* `app/Services/SenderService.php` - Сервис отправки сообщений при попощи библиотеки Telegram Bot SDK
-* `app/Services/TelegramBotService.php` - Сервис с основной бизнес логикой (Надо бы разбить на другие сервисы, но сомневаюсь)
-* `app/Services/TextMessagesService.php` - Класс хранящий текста и клавиатуры 
+* `app/Providers/AppServiceProvider.php` - (путь к public_gropu_id, связь интерфейсов)
+* `app/Repositories/Contracts/` - Интерфейсы репозиториев
+* `app/Repositories/CacheRepository.php` - Репозиторий по работе с Redis
+* `app/Repositories/DatabaseRepository.php` - Репозиторий по работе с основной БД
+* `app/Services/`
+  * `app/Services/AdvValidationService.php` - Сервис кастомной валидации
+  * `app/Services/RepositoryService.php` - Сервис координации репозиториев
+  * `app/Services/SenderService.php` - Сервис отправки сообщений при попощи библиотеки Telegram Bot SDK
+  * `app/Services/TelegramBotService.php` - Сервис с основной бизнес логикой
+  * `app/Services/TextMessagesService.php` - Класс хранящий текста и клавиатуры 
