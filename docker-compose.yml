@@ -1,0 +1,93 @@
+services:
+    # Сервис базы данных MySQL
+    mysql:
+        image: mysql:8.0
+        container_name: telegram_bot_mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_SIMPLEUSER}                # обычный пользователь (не root!)
+            MYSQL_PASSWORD: ${DB_SIMPLEUSER_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}         # пароль для root (обязательно)
+        ports:
+            - "3306:3306"
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - bot_network
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.5'
+                    memory: 512M
+
+    # Сервис Redis
+    redis:
+        image: redis:alpine
+        container_name: telegram_bot_redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - bot_network
+
+    # Основное приложение (Laravel + PHP-FPM)
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: telegram_bot_app
+        restart: unless-stopped
+        working_dir: /var/www/html
+        volumes:
+            - .:/var/www/html
+        networks:
+            - bot_network
+        depends_on:
+            - mysql
+            - redis
+        environment:
+            - DB_HOST=mysql
+            - REDIS_HOST=redis
+        env_file:
+            - .env
+
+    # Веб-сервер Nginx (чтобы принимать вебхуки от Telegram)
+    nginx:
+        image: nginx:alpine
+        container_name: telegram_bot_nginx
+        restart: unless-stopped
+        ports:
+            - "80:80"
+        volumes:
+            - .:/var/www/html
+            - ./nginx.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - bot_network
+        depends_on:
+            - app
+
+    # Ngrok – туннель для локального вебхука
+    ngrok:
+        image: ngrok/ngrok:latest
+        container_name: telegram_bot_ngrok
+        restart: unless-stopped
+        ports:
+            - "4040:4040"
+        networks:
+            - bot_network
+        environment:
+            - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+        command: http nginx:80 --host-header=rewrite
+        depends_on:
+            - nginx
+
+networks:
+    bot_network:
+        driver: bridge
+
+volumes:
+    mysql_data:
+    redis_data:

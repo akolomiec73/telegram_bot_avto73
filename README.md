@@ -11,6 +11,7 @@
 * Фреймворк Laravel 12
 * MySQL
 * Redis в качестве кеша
+* Docker для контеризации
 * Библиотека по работе с Telegram API - Telegram Bot SDK
 * Используется форматер кода laravel pint
 
@@ -37,3 +38,22 @@
   * `app/Services/SenderService.php` - Сервис отправки сообщений при попощи библиотеки Telegram Bot SDK
   * `app/Services/TelegramBotService.php` - Сервис с основной бизнес логикой
   * `app/Services/TextMessagesService.php` - Класс хранящий текста и клавиатуры 
+* `Dockerfile` - готовый dockerfile для сборки
+* `docker-compose.yml` - настройка остальных контейнеров mysql, redis, nginx, ngrok
+
+
+## Запуск приложения на локальном ПК:
+1. Скопировать `.env.example` в `.env`, указав необходимые параметры
+    * APP_KEY
+    * DB_USERNAME, DB_PASSWORD
+    * TELEGRAM_BOT_TOKEN - токен созданного вами бота в @BotFather
+    * TELEGRAM_BOT_USERNAME - имя вашего бота
+    * TELEGRAM_PUBLIC_GROUP_ID - chat_id телеграм канала для публикации
+2. Собрать и запустить Docker-контейнеры `docker-compose up -d`
+3. Запустить миграции `docker-compose exec app php artisan migrate`
+4. Ngrok пробрасывает публичный адрес на ваш локальный `nginx` (порт 80). После запуска `docker-compose up -d`
+   * Откройте в браузере `http://localhost:4040`. Вы увидите интерфейс ngrok
+   * Скопируйте публичный HTTPS-адрес, например `https://abc123.ngrok-free.app`.
+   * Установите вебхук (замените `ВАШ_ТОКЕН_БОТА` и добавьте ваш путь к эндпоинту
+   * `curl -F "url=https://abc123.ngrok-free.app/api/webhook" "https://api.telegram.org/botВАШ_ТОКЕН_БОТА/setWebhook"`
+   * Проверка установки вебхука `curl "https://api.telegram.org/botВАШ_ТОКЕН_БОТА/getWebhookInfo"`
