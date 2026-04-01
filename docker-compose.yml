@@ -53,6 +53,33 @@ services:
             - REDIS_HOST=redis
         env_file:
             - .env
+    worker:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: telegram_bot_worker
+        restart: unless-stopped
+        command: php artisan queue:work --queue=logs,default --tries=3 --sleep=3 --max-time=3600
+        volumes:
+            - .:/var/www/html
+        networks:
+            - bot_network
+        depends_on:
+            - mysql
+            - redis
+        env_file:
+            - .env
+        environment:
+            - DB_HOST=mysql
+            - REDIS_HOST=redis
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.5'        # 50% одного ядра CPU
+                    memory: 512M       # максимум 512 МБ оперативной памяти
+                reservations:
+                    cpus: '0.1'        # гарантированно 10% CPU
+                    memory: 128M       # минимум 128 МБ памяти
 
     # Веб-сервер Nginx (чтобы принимать вебхуки от Telegram)
     nginx:
