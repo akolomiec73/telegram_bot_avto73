@@ -17,7 +17,7 @@ interface DatabaseRepositoryInterface
 
     public function updateTempAdvData(int $chatId, array $data): void;
 
-    public function getUserDatePost(int $chatId): BotUsers;
+    public function getUserDatePost(int $chatId): ?BotUsers;
 
     public function updateUserDatePost(int $chatId, string $date): void;
 

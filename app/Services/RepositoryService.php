@@ -61,7 +61,7 @@ class RepositoryService
         $this->dbRepo->updateTempAdvData($chatId, $data);
     }
 
-    public function getUserDatePost(int $chatId): object
+    public function getUserDatePost(int $chatId): ?object
     {
         return $this->dbRepo->getUserDatePost($chatId);
     }
