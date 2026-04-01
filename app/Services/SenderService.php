@@ -15,10 +15,13 @@ class SenderService
 
     private string $publicGroupId;
 
-    public function __construct(Api $telegram, string $publicGroupId)
+    protected LoggerService $logger;
+
+    public function __construct(Api $telegram, string $publicGroupId, LoggerService $logger)
     {
         $this->telegram = $telegram;
         $this->publicGroupId = $publicGroupId;
+        $this->logger = $logger;
     }
 
     private function prepareMessageParams(int $chatId, string $text, ?int $message_id = null, ?array $keyboard = null): array
@@ -44,7 +47,7 @@ class SenderService
         try {
             $this->telegram->sendMessage($this->prepareMessageParams($chatId, $text));
         } catch (\Exception $e) {
-            \Log::error('Telegram sendMessage failed: '.$e->getMessage());
+            $this->logger->error('Telegram sendMessage failed: '.$e->getMessage());
         }
     }
 
@@ -53,7 +56,7 @@ class SenderService
         try {
             $this->telegram->editMessageText($this->prepareMessageParams($chatId, $text, $message_id));
         } catch (\Exception $e) {
-            \Log::error('Telegram editMessageText failed: '.$e->getMessage());
+            $this->logger->error('Telegram editMessageText failed: '.$e->getMessage());
         }
     }
 
@@ -62,7 +65,7 @@ class SenderService
         try {
             $this->telegram->sendMessage($this->prepareMessageParams($chatId, $text, null, $keyboard));
         } catch (\Exception $e) {
-            \Log::error('Telegram sendMessageWithKeyboard failed: '.$e->getMessage());
+            $this->logger->error('Telegram sendMessageWithKeyboard failed: '.$e->getMessage());
         }
     }
 
@@ -71,7 +74,7 @@ class SenderService
         try {
             $this->telegram->editMessageText($this->prepareMessageParams($chatId, $text, $message_id, $keyboard));
         } catch (\Exception $e) {
-            \Log::error('Telegram editMessageWithKeyboard failed: '.$e->getMessage());
+            $this->logger->error('Telegram editMessageWithKeyboard failed: '.$e->getMessage());
         }
     }
 
@@ -86,7 +89,7 @@ class SenderService
                     'parse_mode' => 'HTML',
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Telegram sendPhoto failed: '.$e->getMessage());
+                $this->logger->error('Telegram sendPhoto failed: '.$e->getMessage());
             }
         } else {
             try {
@@ -96,7 +99,7 @@ class SenderService
                     'parse_mode' => 'HTML',
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Telegram sendMessage failed: '.$e->getMessage());
+                $this->logger->error('Telegram sendMessage failed: '.$e->getMessage());
             }
         }
     }
