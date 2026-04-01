@@ -20,16 +20,20 @@ class TelegramBotService
 
     protected RepositoryService $repository;
 
+    protected LoggerService $logger;
+
     public function __construct(
         Api $telegram,
         SenderService $senderMessage,
         AdvValidationService $validator,
-        RepositoryService $repository
+        RepositoryService $repository,
+        LoggerService $logger
     ) {
         $this->telegram = $telegram;
         $this->senderMessage = $senderMessage;
         $this->validator = $validator;
         $this->repository = $repository;
+        $this->logger = $logger;
     }
 
     // Основной метод обработки обновлений от Telegram
@@ -37,6 +41,11 @@ class TelegramBotService
     {
         $update = $this->telegram->getWebhookUpdate(); // Получаем обновление от Telegram
         $message = $update->getMessage();
+        if (! $message) {
+            $this->logger->warning('Unknown message', ['update' => $update]);
+
+            return;
+        }
         $text = $message->getText();
         $chatId = $message->getChat()->getId();
         $message_id = $message->getMessageId(); // id message для изменений
@@ -50,7 +59,7 @@ class TelegramBotService
             $this->handleText($chatId, $text);
         } else { // Если попытаются отправить файл, стикер, видео
             $this->senderMessage->sendMessage($chatId, 'Бот принимает только текстовые сообщения и команды.');
-            \Log::debug('Пользователь отправил файл\стикер\видео', ['chat_id' => $chatId, 'message_id' => $message_id]);
+            $this->logger->debug('User send media', ['chat_id' => $chatId, 'message' => $message]);
         }
     }
 
@@ -62,6 +71,7 @@ class TelegramBotService
                 $this->sendWelcomeMessage($chatId, $username, $message_id, true);
                 break;
             default:
+                $this->logger->debug('User send unknown command', ['chat_id' => $chatId, 'text' => $text]);
                 $this->senderMessage->sendMessage($chatId, 'Неизвестная команда.');
         }
     }
@@ -103,13 +113,14 @@ class TelegramBotService
                         break;
                     default:
                         $this->senderMessage->sendMessage($chatId, 'Неопределённый stage');
+                        $this->logger->debug('Unknown stage for user', ['chat_id' => $chatId, 'text' => $text]);
                 }
             } else {
-                \Log::warning('User не найден: '.$chatId);
+                $this->logger->error('User not found', ['chat_id' => $chatId]);
             }
         } else {
             $this->senderMessage->sendMessage($chatId, 'Некорректный текст сообщения');
-            \Log::warning("User: $chatId отправил некорректный текст: $text");
+            $this->logger->warning('User send bad text', ['chat_id' => $chatId, 'text' => $text]);
         }
     }
 
@@ -154,6 +165,7 @@ class TelegramBotService
                 break;
             default:
                 $this->senderMessage->sendMessage($chatId, 'Неизвестный callback.');
+                $this->logger->warning('Unknown callback for user', ['chat_id' => $chatId, 'callbackQuery' => $callbackQuery->getData()]);
         }
     }
 
@@ -169,6 +181,7 @@ class TelegramBotService
             $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
         }
         $this->repository->updateUser($chatId, '', $username);
+        $this->logger->debug('Send welcome message to user', ['chat_id' => $chatId]);
     }
 
     // Отправка сообщения о подаче объявления
@@ -178,6 +191,7 @@ class TelegramBotService
         $text = $textMessage['text'];
         $keyboard = $textMessage['keyboard'];
         $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
+        $this->logger->debug('Send Post message to user', ['chat_id' => $chatId]);
     }
 
     // Отправка сообщения о выборе категории транспорт
@@ -190,6 +204,7 @@ class TelegramBotService
 
         $this->repository->updateUser($chatId, UserStages::POST_ADV_STEP1);
         $this->repository->updateTempAdv($chatId, ['adv_category' => $adv_category]);
+        $this->logger->debug('Send list car message to user', ['chat_id' => $chatId]);
     }
 
     // Отправка сообщения по кнопке "Запчасти"
@@ -199,6 +214,7 @@ class TelegramBotService
         $text = $textMessage['text'];
         $keyboard = $textMessage['keyboard'];
         $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
+        $this->logger->debug('Send list category message to user', ['chat_id' => $chatId]);
     }
 
     // Обработчик callback для категории Запчасти
@@ -215,6 +231,7 @@ class TelegramBotService
         };
         $this->repository->updateUser($chatId, UserStages::POST_ADV_DETAIL_STEP1);
         $this->repository->updateTempAdv($chatId, ['adv_category' => $adv_category]);
+        $this->logger->debug('Send Detail message to user', ['chat_id' => $chatId]);
     }
 
     // Обработчик стадии
@@ -233,6 +250,7 @@ class TelegramBotService
             }
         } else {
             $this->senderMessage->sendMessage($chatId, $validated['message']);
+            $this->logger->debug('Send NOT validated message to user', ['chat_id' => $chatId, 'message' => $validated['message']]);
         }
     }
 
@@ -254,9 +272,11 @@ class TelegramBotService
             $text = $textMessage['text'];
             $keyboard = $textMessage['keyboard'];
             $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
+            $this->logger->debug('User successful post adv', ['chat_id' => $chatId, 'text_adv' => $text_adv]);
         } else {
             $text = TextMessagesService::getTimeLimitMessage($count_minutes);
             $this->senderMessage->sendMessage($chatId, $text);
+            $this->logger->debug('User have time limit to post', ['chat_id' => $chatId, 'last_date_post' => $user->date_send_add]);
         }
     }
 
