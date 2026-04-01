@@ -10,7 +10,7 @@
 * PHP 8.2
 * Фреймворк Laravel 12
 * MySQL
-* Redis в качестве кеша
+* Redis кеш + очереди
 * Docker для контеризации
 * Библиотека по работе с Telegram API - Telegram Bot SDK
 * Используется форматер кода laravel pint
@@ -18,28 +18,32 @@
 
 
 ## Архитектурные решения:
-* Использует Eloquent ORM (2 таблицы связь 1 к 1)
+* Используется Eloquent ORM (2 таблицы связь 1 к 1)
 * Основная бизнес логика вынесена в TelegramBotService
-* Использует Redis для кеширования стадии пользователя и username
+* Используется Redis для асинхронной записи в лог через worker
+* Используется Redis для кеширования стадии пользователя и username
 * Сервисный слой для координации основной DB и Redis
 
 
 ## Структура проекта:
 * `app/Constant` - Константы (стадии пользователя, наименования подкатегорий)
 * `app/Http/Controllers/TelegramBotController.php` - Основной контроллер
+* `app/Jobs/` - Задачи для очереди
 * `app/Models/` - Модели для 2 таблиц
 * `app/Providers/AppServiceProvider.php` - (путь к public_gropu_id, связь интерфейсов)
-* `app/Repositories/Contracts/` - Интерфейсы репозиториев
-* `app/Repositories/CacheRepository.php` - Репозиторий по работе с Redis
-* `app/Repositories/DatabaseRepository.php` - Репозиторий по работе с основной БД
+* `app/Repositories/` - Репозитории
+  * `app/Repositories/Contracts/` - Интерфейсы репозиториев
+  * `CacheRepository.php` - Репозиторий по работе с Redis
+  * `DatabaseRepository.php` - Репозиторий по работе с основной БД
 * `app/Services/`
-  * `app/Services/AdvValidationService.php` - Сервис кастомной валидации
-  * `app/Services/RepositoryService.php` - Сервис координации репозиториев
-  * `app/Services/SenderService.php` - Сервис отправки сообщений при попощи библиотеки Telegram Bot SDK
-  * `app/Services/TelegramBotService.php` - Сервис с основной бизнес логикой
-  * `app/Services/TextMessagesService.php` - Класс хранящий текста и клавиатуры 
+  * `AdvValidationService.php` - Сервис кастомной валидации
+  * `LoggerService` - Сервис асинхронного логирования
+  * `RepositoryService.php` - Сервис координации репозиториев
+  * `SenderService.php` - Сервис отправки сообщений при помощи библиотеки Telegram Bot SDK
+  * `TelegramBotService.php` - Сервис с основной бизнес логикой
+  * `TextMessagesService.php` - Класс хранящий текста и клавиатуры 
 * `Dockerfile` - готовый dockerfile для сборки
-* `docker-compose.yml` - настройка остальных контейнеров mysql, redis, nginx, ngrok
+* `docker-compose.yml` - настройка остальных контейнеров mysql, redis, nginx, ngrok, worker
 
 
 ## Запуск приложения на локальном ПК:
