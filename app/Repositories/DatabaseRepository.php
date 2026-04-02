@@ -33,7 +33,7 @@ class DatabaseRepository implements DatabaseRepositoryInterface
 
     }
 
-    public function setUserData(int $chatId, string $username, string $stage): void
+    public function setUserData(int $chatId, ?string $username, string $stage): void
     {
         try {
             $result = BotUsers::create([

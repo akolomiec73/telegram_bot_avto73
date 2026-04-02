@@ -36,7 +36,7 @@ class CallbacksHandler
     /**
      * Обработчик callback (кнопки меню)
      */
-    public function handle(int $chatId, string $username, string $callbackQuery, int $message_id): void
+    public function handle(int $chatId, ?string $username, string $callbackQuery, int $message_id): void
     {
         switch ($callbackQuery) {
             case UserStages::BUTTON_POST_ADV:

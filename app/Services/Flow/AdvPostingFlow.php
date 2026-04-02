@@ -35,7 +35,7 @@ class AdvPostingFlow
     /**
      * Отправка приветственного сообщения
      */
-    public function sendWelcomeMessage(int $chatId, string $username, int $message_id, bool $isFirstMessage): void
+    public function sendWelcomeMessage(int $chatId, ?string $username, int $message_id, bool $isFirstMessage): void
     {
         $textMessage = TextMessagesService::getStartMessage();
         $text = $textMessage['text'];

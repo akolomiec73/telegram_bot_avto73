@@ -29,7 +29,7 @@ class CommandsHandler
     /**
      * Обработчик команд
      */
-    public function handle(int $chatId, string $text, string $username, int $message_id): void
+    public function handle(int $chatId, string $text, ?string $username, int $message_id): void
     {
         switch ($text) {
             case '/start':

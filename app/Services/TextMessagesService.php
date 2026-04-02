@@ -115,9 +115,9 @@ class TextMessagesService
 <i>Например: телефон 8-902-210-99-99</i>';
     }
 
-    public static function getFullAdvMessage(object $temp_adv_row, string $username): string
+    public static function getFullAdvMessage(object $temp_adv_row, ?string $username): string
     {
-        if ($username == 'unknown') {
+        if (empty($username)) {
             $contactText = "Продавец: $temp_adv_row->adv_extra_contact";
         } else {
             $contactText = "Продавец: @$username";
@@ -266,6 +266,7 @@ $contactText";
 
 <i>Фара левая на ваз 2114 \ Двигатель mercedes c180</i>';
         $result['keyboard'] = null;
+
         return $result;
     }
 
@@ -278,6 +279,7 @@ $contactText";
 
 <i>диски R12 на ваз 2114 \ Зимняя резина </i>';
         $result['keyboard'] = null;
+
         return $result;
     }
 
@@ -290,6 +292,7 @@ $contactText";
 
 <i>Магнитола pioneer \ Динамики Pride Ruby </i>';
         $result['keyboard'] = null;
+
         return $result;
     }
 
@@ -302,6 +305,7 @@ $contactText";
 
 <i>Набор инструментов</i>';
         $result['keyboard'] = null;
+
         return $result;
     }
 
@@ -314,6 +318,7 @@ $contactText";
 
 <i>Накидки на сидения</i>';
         $result['keyboard'] = null;
+
         return $result;
     }
 

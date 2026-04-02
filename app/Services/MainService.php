@@ -57,7 +57,7 @@ class MainService
         $text = $message->getText();
         $chatId = $message->getChat()->getId();
         $message_id = $message->getMessageId();
-        $username = $message->getChat()->getUsername() ?? 'unknown';
+        $username = $message->getChat()->getUsername();
         $photo = $message->getPhoto() ?? null;
         $fileId = null;
         if ($photo !== null) {

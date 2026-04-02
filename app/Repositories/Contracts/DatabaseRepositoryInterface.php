@@ -11,7 +11,7 @@ interface DatabaseRepositoryInterface
 {
     public function getUserInfo(int $chatId): ?BotUsers;
 
-    public function setUserData(int $chatId, string $username, string $stage): void;
+    public function setUserData(int $chatId, ?string $username, string $stage): void;
 
     public function updateUserData(int $chatId, array $data): void;
 
