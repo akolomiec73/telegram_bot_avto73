@@ -19,7 +19,7 @@
 
 ## Архитектурные решения:
 * Используется Eloquent ORM (2 таблицы связь 1 к 1)
-* Основная бизнес логика вынесена в TelegramBotService
+* Сервис основной бизнес логики - MainService.php
 * Используется Redis для асинхронной записи в лог через worker
 * Используется Redis для кеширования стадии пользователя и username
 * Сервисный слой для координации основной DB и Redis
@@ -36,11 +36,16 @@
   * `CacheRepository.php` - Репозиторий по работе с Redis
   * `DatabaseRepository.php` - Репозиторий по работе с основной БД
 * `app/Services/`
+  * `Flow/` - доп методы для обработчиков 
+  * `Handlers/` - Обработчики сообщений
+    * `CallbacksHandler.php` - Обработчик callback (нажатий на кнопки меню)
+    * `CommandsHandler.php` - Обработчик команд (/start)
+    * `TextHandler.php` - Обработчик текстовых сообщений
   * `AdvValidationService.php` - Сервис кастомной валидации
   * `LoggerService` - Сервис асинхронного логирования
+  * `MainService.php` - Основной сервис для выбора обработчика
   * `RepositoryService.php` - Сервис координации репозиториев
   * `SenderService.php` - Сервис отправки сообщений при помощи библиотеки Telegram Bot SDK
-  * `TelegramBotService.php` - Сервис с основной бизнес логикой
   * `TextMessagesService.php` - Класс хранящий текста и клавиатуры 
 * `Dockerfile` - готовый dockerfile для сборки
 * `docker-compose.yml` - настройка остальных контейнеров mysql, redis, nginx, ngrok, worker
