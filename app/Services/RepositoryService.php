@@ -28,8 +28,15 @@ class RepositoryService
     {
         $user = $this->cacheRepo->getUserInfo($chatId);
         if (! $user) {
-            $user = $this->dbRepo->getUserInfo($chatId);
+            $userObject = $this->dbRepo->getUserInfo($chatId);
+            if ($userObject === null) {
+                return null;
+            }
             $this->cacheRepo->setUserData($chatId, $user->username, $user->stage);
+            $user = [
+                'username' => $userObject->username,
+                'stage' => $userObject->stage,
+            ];
         }
 
         return $user;
