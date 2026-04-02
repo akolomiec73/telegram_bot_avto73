@@ -117,6 +117,11 @@ class TextMessagesService
 
     public static function getFullAdvMessage(object $temp_adv_row, string $username): string
     {
+        if ($username == 'unknown') {
+            $contactText = "Продавец: $temp_adv_row->adv_extra_contact";
+        } else {
+            $contactText = "Продавец: @$username";
+        }
         if ($temp_adv_row->adv_car_year_realise) {
             $text_car_year = ", $temp_adv_row->adv_car_year_realise  г.";
         } else {
@@ -132,7 +137,7 @@ class TextMessagesService
 
 $temp_adv_row->adv_description
 
-Продавец: @$username";
+$contactText";
     }
 
     public static function getFinishMessage(): array
