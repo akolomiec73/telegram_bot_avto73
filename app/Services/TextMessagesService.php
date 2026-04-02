@@ -191,13 +191,17 @@ $temp_adv_row->adv_description
         return $result;
     }
 
-    public static function getCategoryCarMessage(): string
+    public static function getCategoryCarMessage(): array
     {
-        return '❗❔ <b>Марка и модель авто</b>
+        $result = [];
+        $result['text'] = '❗❔ <b>Марка и модель авто</b>
 
 Укажите марку и модель вашего авто.
 
 <i>Например Audi RS7 \ Mercedes C180 \ BMW 3 \ Chevrolet Niva \ Ford Focus \ Hyundai Solaris \ Volkswagen Golf \ ВАЗ 2114</i>';
+        $result['keyboard'] = null;
+
+        return $result;
     }
 
     public static function getCategoryDetailMessage(): array
@@ -248,49 +252,64 @@ $temp_adv_row->adv_description
         return $result;
     }
 
-    public static function getCategoryDetailDetailMessage(): string
+    public static function getCategoryDetailDetailMessage(): array
     {
-        return '❔ <b>Название</b>
+        $result = [];
+        $result['text'] = '❔ <b>Название</b>
 
 Укажите короткое название объявления.
 
 <i>Фара левая на ваз 2114 \ Двигатель mercedes c180</i>';
+        $result['keyboard'] = null;
+        return $result;
     }
 
-    public static function getCategoryDetailWheelsMessage(): string
+    public static function getCategoryDetailWheelsMessage(): array
     {
-        return '❔ <b>Название</b>
+        $result = [];
+        $result['text'] = '❔ <b>Название</b>
 
 Укажите короткое название объявления.
 
 <i>диски R12 на ваз 2114 \ Зимняя резина </i>';
+        $result['keyboard'] = null;
+        return $result;
     }
 
-    public static function getCategoryDetailAudioMessage(): string
+    public static function getCategoryDetailAudioMessage(): array
     {
-        return '❔ <b>Название</b>
+        $result = [];
+        $result['text'] = '❔ <b>Название</b>
 
 Укажите короткое название объявления.
 
 <i>Магнитола pioneer \ Динамики Pride Ruby </i>';
+        $result['keyboard'] = null;
+        return $result;
     }
 
-    public static function getCategoryDetailToolsMessage(): string
+    public static function getCategoryDetailToolsMessage(): array
     {
-        return '❔ <b>Название</b>
+        $result = [];
+        $result['text'] = '❔ <b>Название</b>
 
 Укажите короткое название объявления.
 
 <i>Набор инструментов</i>';
+        $result['keyboard'] = null;
+        return $result;
     }
 
-    public static function getCategoryDetailOthersMessage(): string
+    public static function getCategoryDetailOthersMessage(): array
     {
-        return '❔ <b>Название</b>
+        $result = [];
+        $result['text'] = '❔ <b>Название</b>
 
 Укажите короткое название объявления.
 
 <i>Накидки на сидения</i>';
+        $result['keyboard'] = null;
+        return $result;
     }
 
     public static function getCorrectDescriptionMessage(): string
