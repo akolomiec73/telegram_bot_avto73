@@ -24,18 +24,22 @@ class TextHandler
 
     protected RepositoryService $repository;
 
+    protected TextMessagesService $textMessages;
+
     public function __construct(
         AdvPostingFlow $flow,
         LoggerService $logger,
         SenderService $senderMessage,
         AdvValidationService $validator,
-        RepositoryService $repository
+        RepositoryService $repository,
+        TextMessagesService $textMessages
     ) {
         $this->flow = $flow;
         $this->logger = $logger;
         $this->senderMessage = $senderMessage;
         $this->validator = $validator;
         $this->repository = $repository;
+        $this->textMessages = $textMessages;
     }
 
     /**
@@ -72,6 +76,12 @@ class TextHandler
                         break;
                     case UserStages::POST_ADV_DETAIL_STEP1: // получаем Название запчасти
                         $this->handleStage($text, UserStages::POST_ADV_DETAIL_STEP2, 'adv_car_mark', $chatId);
+                        break;
+                    case UserStages::SET_FILTER_PRICE_MIN:
+                        $this->handleStageFilters($text, UserStages::SET_FILTER_PRICE_MAX, 'filter_price_min', $chatId);
+                        break;
+                    case UserStages::SET_FILTER_PRICE_MAX:
+                        $this->handleStageFilters($text, UserStages::SET_FILTER_PRICE_APPLY, 'filter_price_max', $chatId);
                         break;
                     default:
                         $this->senderMessage->sendMessage($chatId, 'Неопределённый stage');
@@ -116,7 +126,9 @@ class TextHandler
         return match ($stage) {
             UserStages::POST_ADV_STEP2 => ['result' => true, 'message' => null], // title пока не валидируем
             UserStages::POST_ADV_STEP3 => $this->validator->validateCarYear($text),
-            UserStages::POST_ADV_STEP4 => $this->validator->validatePrice($text),
+            UserStages::POST_ADV_STEP4,
+            UserStages::SET_FILTER_PRICE_MAX,
+            UserStages::SET_FILTER_PRICE_APPLY => $this->validator->validatePrice($text),
             UserStages::POST_ADV_STEP5 => $this->validator->validateDescription($text),
             UserStages::POST_ADV_STEP6, '' => $this->validator->validateIsPhoto($text),
             UserStages::POST_ADV_STEP7 => $this->validator->validateExtraContact($text),
@@ -128,7 +140,7 @@ class TextHandler
     /**
      * Получение текста сообщения в handleStage
      */
-    private function getTextMessageForStage(?string $stage): ?string
+    private function getTextMessageForStage(?string $stage, ?int $chatId = null): string|array
     {
         return match ($stage) {
             UserStages::POST_ADV_STEP2 => TextMessagesService::getCarYearMessage(),
@@ -136,7 +148,30 @@ class TextHandler
             UserStages::POST_ADV_STEP4 => TextMessagesService::getDescriptionMessage(),
             UserStages::POST_ADV_STEP5 => TextMessagesService::getPhotoMessage(),
             UserStages::POST_ADV_STEP6 => TextMessagesService::getContactMessage(),
+            UserStages::SET_FILTER_PRICE_MAX => TextMessagesService::getFilterPriceMaxMessage(),
+            UserStages::SET_FILTER_PRICE_APPLY => $this->textMessages->getFilterListMessage($chatId),
             default => null,
         };
+    }
+
+    /**
+     * Обработчик стадии в handle для фильтров
+     */
+    private function handleStageFilters(?string $text, string $stage, string $column_name, int $chatId): void
+    {
+        $validated = $this->validateStage($stage, $text);
+        if ($validated['result']) {
+            $text_message = $this->getTextMessageForStage($stage, $chatId);
+            $this->repository->updateUser($chatId, $stage);
+            $this->repository->updateFilterPrice($chatId, $column_name, $text);
+            if ($stage == UserStages::SET_FILTER_PRICE_MAX) {
+                $this->senderMessage->sendMessage($chatId, $text_message);
+            } else {
+                $this->senderMessage->sendMessageWithKeyboard($chatId, $text_message['text'], $text_message['keyboard']);
+            }
+        } else {
+            $this->senderMessage->sendMessage($chatId, $validated['message']);
+            $this->logger->debug('Send NOT validated message to user', ['chat_id' => $chatId, 'message' => $validated['message']]);
+        }
     }
 }

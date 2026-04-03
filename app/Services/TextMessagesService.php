@@ -11,6 +11,13 @@ use App\Constant\UserStages;
 
 class TextMessagesService
 {
+    protected RepositoryService $repository;
+
+    public function __construct(RepositoryService $repository)
+    {
+        $this->repository = $repository;
+    }
+
     public static function getStartMessage(): array
     {
         $result = [];
@@ -329,5 +336,183 @@ $contactText";
 Укажите <b>Корректное</b> описание объявления.
 
 <b>ВАЖНО! Запрещено добавлять любые контакты, хештеги и ссылки, иначе объявление может быть удалено!</b>';
+    }
+
+    public static function getSearchMessage(): array
+    {
+        $result = [];
+        $result['text'] = '️🔍 <b>Найти объявление</b>
+
+<b>Фильтр объявлений</b>
+
+Настройте фильтр и получайте уведомления о новых объявлениях с указанными вами параметрами.';
+        $keyboard = [
+            [
+                [
+                    'text' => 'Фильтр объявлений',
+                    'callback_data' => UserStages::BUTTON_FILTER_ADD,
+                ],
+                [
+                    'text' => 'Главное меню',
+                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
+    }
+
+    public function getFilterListMessage(int $chatId): ?array
+    {
+        $filterList = $this->repository->getFilterList($chatId);
+        if ($filterList == null) {
+            return null;
+        }
+        if ($filterList->filter_status == 1) {
+            $status_filter = 'Выключить';
+        } else {
+            $status_filter = 'Включить';
+        }
+        $result['text'] = $this->getFilterInfoMessage($filterList);
+        $keyboard = [
+            [
+                [
+                    'text' => 'Категория',
+                    'callback_data' => UserStages::BUTTON_FILTER_CATEGORY,
+                ],
+                [
+                    'text' => 'Цена',
+                    'callback_data' => UserStages::BUTTON_FILTER_PRICE,
+                ],
+            ],
+            [
+                [
+                    'text' => $status_filter,
+                    'callback_data' => UserStages::BUTTON_FILTER_STATUS,
+                ],
+            ],
+            [
+                [
+                    'text' => 'Главное меню',
+                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
+    }
+
+    public function getFilterCategoryMessage(int $chatId): ?array
+    {
+        $filterList = $this->repository->getFilterList($chatId);
+        if ($filterList == null) {
+            return null;
+        }
+        $text_button_0 = '';
+        $text_button_1 = '';
+
+        if ($filterList->filter_category_car == 1) {
+            $text_button_0 = '✅ ';
+        }
+        if ($filterList->filter_category_detail == 1) {
+            $text_button_1 = '✅ ';
+        }
+
+        $result['text'] = $this->getFilterInfoMessage($filterList);
+        $result['text'] .= '
+
+<b>Выберите категории:</b>';
+        $keyboard = [
+            [
+                [
+                    'text' => $text_button_0.'Транспорт',
+                    'callback_data' => UserStages::BUTTON_FILTER_CATEGORY_CAR,
+                ],
+                [
+                    'text' => $text_button_1.'Запчасти',
+                    'callback_data' => UserStages::BUTTON_FILTER_CATEGORY_DETAIL,
+                ],
+            ],
+            [
+                [
+                    'text' => 'Сохранить',
+                    'callback_data' => UserStages::BUTTON_FILTER_APPLY,
+                ],
+            ],
+        ];
+        $reply_markup = [
+            'inline_keyboard' => $keyboard,
+        ];
+        $result['keyboard'] = $reply_markup;
+
+        return $result;
+    }
+
+    private function getFilterInfoMessage(object $filterList): string
+    {
+
+        if ($filterList->filter_category_car === false && $filterList->filter_category_detail === false) {
+            $text_add_type = 'Не выбрано';
+        } else {
+            $text_add_type = '';
+            if ($filterList->filter_category_car == 1) {
+                $text_add_type .= '<b>•</b><i>Транспорт</i> ';
+            }
+            if ($filterList->filter_category_detail == 1) {
+                $text_add_type .= ' <b>•</b><i>Запчасти</i>';
+            }
+        }
+        if ($filterList->filter_price_min == null) {
+            $text_add_price = 'Не выбрано';
+        } else {
+            $text_add_price = "От <b>$filterList->filter_price_min</b> до <b>$filterList->filter_price_max</b>";
+        }
+        if ($filterList->filter_status == 1) {
+            $text_status_filter = 'ВКЛЮЧЕН 💚';
+        } else {
+            $text_status_filter = 'ВЫКЛЮЧЕН ❤️';
+        }
+
+        return "⚙️ <b>Фильтр объявлений</b>
+
+О появлении новых объявлений будут приходить уведомления!
+
+    <b>Категории объявлений:</b>
+    $text_add_type
+
+    <b>Цена:</b>
+    $text_add_price
+
+Фильтр <b>$text_status_filter</b>";
+    }
+
+    public static function getFilterPriceMessage(): array
+    {
+        $result = [];
+        $result['text'] = '💲 <b>Минимальная Цена</b>
+
+Укажите минимальную цену
+
+<i>Например: 10000</i>';
+        $result['keyboard'] = null;
+
+        return $result;
+    }
+
+    public static function getFilterPriceMaxMessage(): string
+    {
+        return '💲 <b>Максимальная Цена</b>
+
+Укажите максимальную цену
+
+<i>Например: 2000000</i>';
     }
 }

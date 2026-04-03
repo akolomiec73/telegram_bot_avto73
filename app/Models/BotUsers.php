@@ -19,4 +19,9 @@ class BotUsers extends Model
     {
         return $this->hasOne(TempAdvUser::class, 'id_bot_user', 'id');
     }
+
+    public function userFilters()
+    {
+        return $this->hasOne(UserFilters::class, 'id_bot_user', 'id');
+    }
 }

@@ -6,6 +6,7 @@ namespace App\Repositories\Contracts;
 
 use App\Models\BotUsers;
 use App\Models\TempAdvUser;
+use App\Models\UserFilters;
 
 interface DatabaseRepositoryInterface
 {
@@ -22,4 +23,10 @@ interface DatabaseRepositoryInterface
     public function updateUserDatePost(int $chatId, string $date): void;
 
     public function getAdvRow(int $chatId): ?TempAdvUser;
+
+    public function getFilterList(int $chatId): ?UserFilters;
+
+    public function updateFilterCategory(int $chatId, string $stage): void;
+
+    public function updateFilterPrice(int $chatId, string $column, ?string $value): void;
 }

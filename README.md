@@ -18,7 +18,7 @@
 
 
 ## Архитектурные решения:
-* Используется Eloquent ORM (2 таблицы связь 1 к 1)
+* Используется Eloquent ORM (3 таблицы связь от основной 1 к 1 к допам)
 * Сервис основной бизнес логики - MainService.php
 * Используется Redis для асинхронной записи в лог через worker
 * Используется Redis для кеширования стадии пользователя и username
@@ -29,7 +29,7 @@
 * `app/Constant` - Константы (стадии пользователя, наименования подкатегорий)
 * `app/Http/Controllers/TelegramBotController.php` - Основной контроллер
 * `app/Jobs/` - Задачи для очереди
-* `app/Models/` - Модели для 2 таблиц
+* `app/Models/` - Модели
 * `app/Providers/AppServiceProvider.php` - (путь к public_gropu_id, связь интерфейсов)
 * `app/Repositories/` - Репозитории
   * `app/Repositories/Contracts/` - Интерфейсы репозиториев

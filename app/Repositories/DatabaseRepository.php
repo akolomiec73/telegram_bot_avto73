@@ -9,6 +9,7 @@ namespace App\Repositories;
 
 use App\Models\BotUsers;
 use App\Models\TempAdvUser;
+use App\Models\UserFilters;
 use App\Repositories\Contracts\DatabaseRepositoryInterface;
 use App\Services\LoggerService;
 
@@ -103,6 +104,70 @@ class DatabaseRepository implements DatabaseRepositoryInterface
             $this->logger->error('ERROR DB getAdvRow', ['error_text' => $e->getMessage(), 'chat_id' => $chatId]);
 
             return null;
+        }
+    }
+
+    public function getFilterList(int $chatId): ?UserFilters
+    {
+        try {
+            $userFilters = BotUsers::with('userFilters')->where('chat_id', $chatId)->first()->userFilters;
+            if (! $userFilters) {
+                $userFilters = $this->setUserFilters($chatId);
+            }
+            $this->logger->debug('getFilterList', ['result' => $userFilters, 'chat_id' => $chatId]);
+
+            return $userFilters;
+        } catch (\Exception $e) {
+            $this->logger->error('ERROR DB getAdvRow', ['error_text' => $e->getMessage(), 'chat_id' => $chatId]);
+
+            return null;
+        }
+    }
+
+    private function setUserFilters(int $chatId): ?UserFilters
+    {
+        try {
+            $user = $this->getUserInfo($chatId);
+            if ($user == null) {
+                return null;
+            }
+            $user->userFilters()->create([
+                'id_bot_user' => $user->id,
+            ]);
+
+            return BotUsers::with('userFilters')->where('chat_id', $chatId)->first()->userFilters;
+        } catch (\Exception $e) {
+            $this->logger->error('ERROR DB setUserFilters', ['error_text' => $e->getMessage(), 'chat_id' => $chatId]);
+
+            return null;
+        }
+    }
+
+    public function updateFilterCategory(int $chatId, string $stage): void
+    {
+        try {
+            $user = $this->getUserInfo($chatId);
+            $currentValue = UserFilters::where('id_bot_user', $user->id)->value($stage);
+            if ($currentValue === 0) {
+                $newValue = 1;
+            } else {
+                $newValue = 0;
+            }
+            UserFilters::where('id_bot_user', $user->id)->update([$stage => $newValue]);
+            $this->logger->debug('DB updateFilterCategory', ['chat_id' => $chatId, 'column' => $stage, 'value' => $newValue]);
+        } catch (\Exception $e) {
+            $this->logger->error('ERROR DB updateFilterCategory', ['error_text' => $e->getMessage(), 'chat_id' => $chatId, 'column' => $stage, 'value' => $newValue]);
+        }
+    }
+
+    public function updateFilterPrice(int $chatId, string $column, ?string $value): void
+    {
+        try {
+            $user = $this->getUserInfo($chatId);
+            UserFilters::where('id_bot_user', $user->id)->update([$column => $value]);
+            $this->logger->debug('DB updateFilterPrice', ['chat_id' => $chatId, 'column' => $column, 'value' => $value]);
+        } catch (\Exception $e) {
+            $this->logger->error('ERROR DB updateFilterCategory', ['error_text' => $e->getMessage(), 'chat_id' => $chatId, 'column' => $column, 'value' => $value]);
         }
     }
 }

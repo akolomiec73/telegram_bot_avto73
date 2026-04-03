@@ -26,6 +26,13 @@ class UserStages
 
     public const POST_ADV_DETAIL_STEP2 = 'post_set_title_detail_step2';
 
+    // Установки фильтров цены
+    public const SET_FILTER_PRICE_MIN = 'set_filter_price_min';
+
+    public const SET_FILTER_PRICE_MAX = 'set_filter_price_max';
+
+    public const SET_FILTER_PRICE_APPLY = 'set_filter_price_apply';
+
     // callback для кнопок
     public const BUTTON_BACK_MAIN_MENU = 'back_main_menu';
 
@@ -46,6 +53,20 @@ class UserStages
     public const BUTTON_CATEGORY_DETAIL_TOOLS = 'category_detail_tools';
 
     public const BUTTON_CATEGORY_DETAIL_OTHER = 'category_detail_other';
+
+    public const BUTTON_FILTER_ADD = 'filter_add';
+
+    public const BUTTON_FILTER_CATEGORY = 'filter_category';
+
+    public const BUTTON_FILTER_PRICE = 'filter_price';
+
+    public const BUTTON_FILTER_STATUS = 'filter_status';
+
+    public const BUTTON_FILTER_CATEGORY_CAR = 'filter_category_car';
+
+    public const BUTTON_FILTER_CATEGORY_DETAIL = 'filter_category_detail';
+
+    public const BUTTON_FILTER_APPLY = 'apply_filter';
 
     // Имена подкатегории Запчасти
     public const CATEGORY_NAME_DETAIL = 'Запчасти';

@@ -82,4 +82,19 @@ class RepositoryService
     {
         return $this->dbRepo->getAdvRow($chatId);
     }
+
+    public function getFilterList(int $chatId): ?object
+    {
+        return $this->dbRepo->getFilterList($chatId);
+    }
+
+    public function updateFilter(int $chatId, string $stage): void
+    {
+        $this->dbRepo->updateFilterCategory($chatId, $stage);
+    }
+
+    public function updateFilterPrice(int $chatId, string $column, ?string $value): void
+    {
+        $this->dbRepo->updateFilterPrice($chatId, $column, $value);
+    }
 }

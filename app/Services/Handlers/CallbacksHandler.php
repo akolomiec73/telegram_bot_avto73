@@ -21,16 +21,20 @@ class CallbacksHandler
 
     protected RepositoryService $repository;
 
+    protected TextMessagesService $textMessages;
+
     public function __construct(
         AdvPostingFlow $flow,
         LoggerService $logger,
         SenderService $senderMessage,
-        RepositoryService $repository
+        RepositoryService $repository,
+        TextMessagesService $textMessages
     ) {
         $this->flow = $flow;
         $this->logger = $logger;
         $this->senderMessage = $senderMessage;
         $this->repository = $repository;
+        $this->textMessages = $textMessages;
     }
 
     /**
@@ -47,10 +51,15 @@ class CallbacksHandler
             case UserStages::BUTTON_CATEGORY_DETAIL_AUDIO:
             case UserStages::BUTTON_CATEGORY_DETAIL_TOOLS:
             case UserStages::BUTTON_CATEGORY_DETAIL_OTHER:
+            case UserStages::BUTTON_SEARCH_ADV:
+            case UserStages::BUTTON_FILTER_ADD:
+            case UserStages::BUTTON_FILTER_CATEGORY:
+            case UserStages::BUTTON_FILTER_CATEGORY_CAR:
+            case UserStages::BUTTON_FILTER_CATEGORY_DETAIL:
+            case UserStages::BUTTON_FILTER_APPLY:
+            case UserStages::BUTTON_FILTER_PRICE:
+            case UserStages::BUTTON_FILTER_STATUS:
                 $this->handleStage($chatId, $callbackQuery, $message_id);
-                break;
-            case 'search_adv':
-                $this->senderMessage->sendMessage($chatId, 'search_adv');
                 break;
             case UserStages::BUTTON_BACK_MAIN_MENU:
                 $this->flow->sendWelcomeMessage($chatId, $username, $message_id, false);
@@ -86,6 +95,14 @@ class CallbacksHandler
                 $this->repository->updateUser($chatId, $stage);
                 $this->repository->updateTempAdv($chatId, ['adv_category' => $adv_category]);
                 break;
+            case UserStages::BUTTON_FILTER_CATEGORY_CAR:
+            case UserStages::BUTTON_FILTER_CATEGORY_DETAIL:
+            case UserStages::BUTTON_FILTER_STATUS:
+                $this->repository->updateFilter($chatId, $button);
+                break;
+            case UserStages::BUTTON_FILTER_PRICE:
+                $this->repository->updateUser($chatId, UserStages::SET_FILTER_PRICE_MIN);
+                break;
         }
         $textMessage = match ($button) {
             UserStages::BUTTON_POST_ADV => TextMessagesService::getPostMessage(),
@@ -96,6 +113,14 @@ class CallbacksHandler
             UserStages::BUTTON_CATEGORY_DETAIL_AUDIO => TextMessagesService::getCategoryDetailAudioMessage(),
             UserStages::BUTTON_CATEGORY_DETAIL_TOOLS => TextMessagesService::getCategoryDetailToolsMessage(),
             UserStages::BUTTON_CATEGORY_DETAIL_OTHER => TextMessagesService::getCategoryDetailOthersMessage(),
+            UserStages::BUTTON_SEARCH_ADV => TextMessagesService::getSearchMessage(),
+            UserStages::BUTTON_FILTER_ADD,
+            UserStages::BUTTON_FILTER_APPLY,
+            UserStages::BUTTON_FILTER_STATUS => $this->textMessages->getFilterListMessage($chatId),
+            UserStages::BUTTON_FILTER_CATEGORY,
+            UserStages::BUTTON_FILTER_CATEGORY_CAR,
+            UserStages::BUTTON_FILTER_CATEGORY_DETAIL => $this->textMessages->getFilterCategoryMessage($chatId),
+            UserStages::BUTTON_FILTER_PRICE => TextMessagesService::getFilterPriceMessage(),
             default => null,
         };
         if ($textMessage['keyboard'] !== null) {
