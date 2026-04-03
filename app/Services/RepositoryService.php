@@ -32,7 +32,7 @@ class RepositoryService
             if ($userObject === null) {
                 return null;
             }
-            $this->cacheRepo->setUserData($chatId, $user->username, $user->stage);
+            $this->cacheRepo->setUserData($chatId, $userObject->username, $userObject->stage);
             $user = [
                 'username' => $userObject->username,
                 'stage' => $userObject->stage,
