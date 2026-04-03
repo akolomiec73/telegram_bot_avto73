@@ -8,27 +8,18 @@ use App\DTO\UpdateContext;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
 use App\Services\SenderService;
+use App\Services\TextMessagesService;
 
-class CommandsHandler
+readonly class CommandsHandler
 {
-    protected AdvPostingFlow $flow;
-
-    protected LoggerService $logger;
-
-    protected SenderService $senderMessage;
-
     public function __construct(
-        AdvPostingFlow $flow,
-        LoggerService $logger,
-        SenderService $senderMessage
-    ) {
-        $this->flow = $flow;
-        $this->logger = $logger;
-        $this->senderMessage = $senderMessage;
-    }
+        private AdvPostingFlow $flow,
+        private LoggerService $logger,
+        private SenderService $sender
+    ) {}
 
     /**
-     * Обработчик команд
+     * Обработчик текстовых команд (начинаются с '/').
      */
     public function handle(UpdateContext $context): void
     {
@@ -37,8 +28,8 @@ class CommandsHandler
                 $this->flow->sendWelcomeMessage($context->chatId, $context->username, $context->messageId, true);
                 break;
             default:
-                $this->logger->debug('User send unknown command', ['chat_id' => $context->chatId, 'text' => $context->text]);
-                $this->senderMessage->sendOrEditMessage($context->chatId, 'Неизвестная команда.');
+                $this->logger->info('User send unknown command', ['chat_id' => $context->chatId, 'text' => $context->text]);
+                $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getUnknownCommandMessage());
         }
     }
 }

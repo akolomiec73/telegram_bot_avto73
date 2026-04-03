@@ -525,4 +525,9 @@ $contactText";
     {
         return 'Произошла ошибка, попробуйте позже.';
     }
+
+    public static function getUnknownCommandMessage(): string
+    {
+        return 'Неизвестная команда.';
+    }
 }
