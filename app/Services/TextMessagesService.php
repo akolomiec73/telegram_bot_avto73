@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Constant\UserStages;
+use App\Constant\CallbackData;
 
 class TextMessagesService
 {
@@ -33,11 +33,11 @@ class TextMessagesService
             [
                 [
                     'text' => 'Подать объявление',
-                    'callback_data' => UserStages::BUTTON_POST_ADV,
+                    'callback_data' => CallbackData::POST_ADV,
                 ],
                 [
                     'text' => 'Найти объявление',
-                    'callback_data' => UserStages::BUTTON_SEARCH_ADV,
+                    'callback_data' => CallbackData::SEARCH_ADV,
                 ],
             ],
             [
@@ -157,7 +157,7 @@ $contactText";
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                    'callback_data' => CallbackData::BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -181,17 +181,17 @@ $contactText";
             [
                 [
                     'text' => '🚗 Транспорт',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_CAR,
+                    'callback_data' => CallbackData::CATEGORY_CAR,
                 ],
                 [
                     'text' => '⚙️ Запчасти',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL,
+                    'callback_data' => CallbackData::CATEGORY_DETAIL,
                 ],
             ],
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                    'callback_data' => CallbackData::BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -226,33 +226,33 @@ $contactText";
             [
                 [
                     'text' => '⚙️ Запчасти',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_DETAIL,
+                    'callback_data' => CallbackData::CATEGORY_DETAIL_DETAIL,
                 ],
                 [
                     'text' => '⭕️ Колёса',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_WHEELS,
+                    'callback_data' => CallbackData::CATEGORY_DETAIL_WHEELS,
                 ],
             ],
             [
                 [
                     'text' => '🔊 Аудио и видео',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_AUDIO,
+                    'callback_data' => CallbackData::CATEGORY_DETAIL_AUDIO,
                 ],
                 [
                     'text' => '🧰 Инструменты',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_TOOLS,
+                    'callback_data' => CallbackData::CATEGORY_DETAIL_TOOLS,
                 ],
             ],
             [
                 [
                     'text' => '📦 Другое',
-                    'callback_data' => UserStages::BUTTON_CATEGORY_DETAIL_OTHER,
+                    'callback_data' => CallbackData::CATEGORY_DETAIL_OTHER,
                 ],
             ],
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                    'callback_data' => CallbackData::BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -350,11 +350,11 @@ $contactText";
             [
                 [
                     'text' => 'Фильтр объявлений',
-                    'callback_data' => UserStages::BUTTON_FILTER_ADD,
+                    'callback_data' => CallbackData::FILTER_ADD,
                 ],
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                    'callback_data' => CallbackData::BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -382,23 +382,23 @@ $contactText";
             [
                 [
                     'text' => 'Категория',
-                    'callback_data' => UserStages::BUTTON_FILTER_CATEGORY,
+                    'callback_data' => CallbackData::FILTER_CATEGORY,
                 ],
                 [
                     'text' => 'Цена',
-                    'callback_data' => UserStages::BUTTON_FILTER_PRICE,
+                    'callback_data' => CallbackData::FILTER_PRICE,
                 ],
             ],
             [
                 [
                     'text' => $status_filter,
-                    'callback_data' => UserStages::BUTTON_FILTER_STATUS,
+                    'callback_data' => CallbackData::FILTER_STATUS,
                 ],
             ],
             [
                 [
                     'text' => 'Главное меню',
-                    'callback_data' => UserStages::BUTTON_BACK_MAIN_MENU,
+                    'callback_data' => CallbackData::BACK_MAIN_MENU,
                 ],
             ],
         ];
@@ -434,17 +434,17 @@ $contactText";
             [
                 [
                     'text' => $text_button_0.'Транспорт',
-                    'callback_data' => UserStages::BUTTON_FILTER_CATEGORY_CAR,
+                    'callback_data' => CallbackData::FILTER_CATEGORY_CAR,
                 ],
                 [
                     'text' => $text_button_1.'Запчасти',
-                    'callback_data' => UserStages::BUTTON_FILTER_CATEGORY_DETAIL,
+                    'callback_data' => CallbackData::FILTER_CATEGORY_DETAIL,
                 ],
             ],
             [
                 [
                     'text' => 'Сохранить',
-                    'callback_data' => UserStages::BUTTON_FILTER_APPLY,
+                    'callback_data' => CallbackData::FILTER_APPLY,
                 ],
             ],
         ];
