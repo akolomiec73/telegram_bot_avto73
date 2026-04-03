@@ -1,39 +1,47 @@
 <?php
 
-/*
- * отправка сообщений в телеграм
- */
 declare(strict_types=1);
 
 namespace App\Services;
 
 use Telegram\Bot\Api;
 
-class SenderService
+readonly class SenderService
 {
-    protected Api $telegram;
+    /**
+     * Сервис отправки сообщений через Telegram BOT SDK
+     */
+    public function __construct(
+        private Api $telegram,
+        private string $publicGroupId,
+        private LoggerService $logger
+    ) {}
 
-    private string $publicGroupId;
-
-    protected LoggerService $logger;
-
-    public function __construct(Api $telegram, string $publicGroupId, LoggerService $logger)
+    /**
+     * Основная точка входа, определяет отправить новое сообщение или изменить отправленное
+     */
+    public function sendOrEditMessage(int $chatId, string $text, ?int $messageId = null, ?array $keyboard = null): void
     {
-        $this->telegram = $telegram;
-        $this->publicGroupId = $publicGroupId;
-        $this->logger = $logger;
+        $params = $this->buildRequestParams($chatId, $text, $messageId, $keyboard);
+        if ($messageId === null) {
+            $this->sendMessage($params);
+        } else {
+            $this->editMessage($params);
+        }
     }
 
-    private function prepareMessageParams(int $chatId, string $text, ?int $message_id = null, ?array $keyboard = null): array
+    /**
+     * Формирует параметры для отправки сообщения
+     */
+    private function buildRequestParams(int $chatId, string $text, ?int $messageId = null, ?array $keyboard = null): array
     {
         $params = [
             'chat_id' => $chatId,
             'text' => $text,
             'parse_mode' => 'HTML',
         ];
-
-        if ($message_id !== null) {
-            $params['message_id'] = $message_id;
+        if ($messageId !== null) {
+            $params['message_id'] = $messageId;
         }
         if ($keyboard !== null) {
             $params['reply_markup'] = json_encode($keyboard);
@@ -42,65 +50,54 @@ class SenderService
         return $params;
     }
 
-    public function sendMessage(int $chatId, string $text): void
+    /**
+     * Отправка нового сообщения
+     *
+     * @throws \Throwable
+     */
+    private function sendMessage(array $params): void
     {
         try {
-            $this->telegram->sendMessage($this->prepareMessageParams($chatId, $text));
-        } catch (\Exception $e) {
-            $this->logger->error('Telegram sendMessage failed: '.$e->getMessage());
+            $this->telegram->sendMessage($params);
+        } catch (\Throwable $e) {
+            $this->logger->error('Telegram sendMessage failed', ['error' => $e->getMessage(), 'params' => $params]);
+            throw $e;
         }
     }
 
-    public function editMessage(int $chatId, int $message_id, string $text): void
+    /**
+     * Редактирование отправленного сообщения
+     *
+     * @throws \Throwable
+     */
+    private function editMessage(array $params): void
     {
         try {
-            $this->telegram->editMessageText($this->prepareMessageParams($chatId, $text, $message_id));
-        } catch (\Exception $e) {
-            $this->logger->error('Telegram editMessageText failed: '.$e->getMessage());
+            $this->telegram->editMessageText($params);
+        } catch (\Throwable $e) {
+            $this->logger->error('Telegram editMessage failed', ['error' => $e->getMessage(), 'params' => $params]);
+            throw $e;
         }
     }
 
-    public function sendMessageWithKeyboard(int $chatId, string $text, array $keyboard): void
+    /**
+     * Отправка фото с подписью в паблик
+     *
+     * @throws \Throwable
+     */
+    public function sendPostInPublic(string $fileId, string $text): void
     {
         try {
-            $this->telegram->sendMessage($this->prepareMessageParams($chatId, $text, null, $keyboard));
-        } catch (\Exception $e) {
-            $this->logger->error('Telegram sendMessageWithKeyboard failed: '.$e->getMessage());
-        }
-    }
-
-    public function editMessageWithKeyboard(int $chatId, int $message_id, string $text, array $keyboard): void
-    {
-        try {
-            $this->telegram->editMessageText($this->prepareMessageParams($chatId, $text, $message_id, $keyboard));
-        } catch (\Exception $e) {
-            $this->logger->error('Telegram editMessageWithKeyboard failed: '.$e->getMessage());
-        }
-    }
-
-    public function sendPostInPublic(?string $fileId, string $text): void
-    {
-        if ($fileId !== null) {
-            try {
-                $this->telegram->sendPhoto([
-                    'chat_id' => $this->publicGroupId,
-                    'photo' => $fileId,
-                    'caption' => $text,
-                    'parse_mode' => 'HTML',
-                ]);
-            } catch (\Exception $e) {
-                $this->logger->error('Telegram sendPhoto failed: '.$e->getMessage());
-            }
-        } else {
-            try {
-                $this->telegram->sendMessage([
-                    'chat_id' => $this->publicGroupId,
-                    'text' => $text,
-                    'parse_mode' => 'HTML',
-                ]);
-            } catch (\Exception $e) {
-                $this->logger->error('Telegram sendMessage failed: '.$e->getMessage());
-            }
+            $params = [
+                'chat_id' => $this->publicGroupId,
+                'photo' => $fileId,
+                'caption' => $text,
+                'parse_mode' => 'HTML',
+            ];
+            $this->telegram->sendPhoto($params);
+        } catch (\Throwable $e) {
+            $this->logger->error('Telegram sendPhoto failed', ['error' => $e->getMessage(), 'params' => $params]);
+            throw $e;
         }
     }
 }

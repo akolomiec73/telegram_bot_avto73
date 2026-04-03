@@ -85,14 +85,14 @@ class TextHandler
                         $this->handleStageFilters($context->text, UserStages::SET_FILTER_PRICE_APPLY, 'filter_price_max', $context->chatId);
                         break;
                     default:
-                        $this->senderMessage->sendMessage($context->chatId, 'Неопределённый stage');
+                        $this->senderMessage->sendOrEditMessage($context->chatId, 'Неопределённый stage');
                         $this->logger->debug('Unknown stage for user', ['chat_id' => $context->chatId, 'text' => $context->text]);
                 }
             } else {
                 $this->logger->error('User not found', ['chat_id' => $context->chatId]);
             }
         } else {
-            $this->senderMessage->sendMessage($context->chatId, 'Некорректный текст сообщения');
+            $this->senderMessage->sendOrEditMessage($context->chatId, 'Некорректный текст сообщения');
             $this->logger->warning('User send bad text', ['chat_id' => $context->chatId, 'text' => $context->text]);
         }
     }
@@ -108,13 +108,13 @@ class TextHandler
             $this->repository->updateUser($chatId, $stage);
             $this->repository->updateTempAdv($chatId, [$column_name => $text]);
             if ($text_message !== null) {
-                $this->senderMessage->sendMessage($chatId, $text_message);
+                $this->senderMessage->sendOrEditMessage($chatId, $text_message);
             }
             if ($stage == '' || $stage == UserStages::POST_ADV_STEP7) {
                 $this->flow->finishAdv($chatId);
             }
         } else {
-            $this->senderMessage->sendMessage($chatId, $validated['message']);
+            $this->senderMessage->sendOrEditMessage($chatId, $validated['message']);
             $this->logger->debug('Send NOT validated message to user', ['chat_id' => $chatId, 'message' => $validated['message']]);
         }
     }
@@ -166,12 +166,12 @@ class TextHandler
             $this->repository->updateUser($chatId, $stage);
             $this->repository->updateFilterPrice($chatId, $column_name, $text);
             if ($stage == UserStages::SET_FILTER_PRICE_MAX) {
-                $this->senderMessage->sendMessage($chatId, $text_message);
+                $this->senderMessage->sendOrEditMessage($chatId, $text_message);
             } else {
-                $this->senderMessage->sendMessageWithKeyboard($chatId, $text_message['text'], $text_message['keyboard']);
+                $this->senderMessage->sendOrEditMessage($chatId, $text_message['text'], null, $text_message['keyboard']);
             }
         } else {
-            $this->senderMessage->sendMessage($chatId, $validated['message']);
+            $this->senderMessage->sendOrEditMessage($chatId, $validated['message']);
             $this->logger->debug('Send NOT validated message to user', ['chat_id' => $chatId, 'message' => $validated['message']]);
         }
     }

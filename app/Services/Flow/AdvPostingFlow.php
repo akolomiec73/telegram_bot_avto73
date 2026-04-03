@@ -41,9 +41,9 @@ class AdvPostingFlow
         $text = $textMessage['text'];
         $keyboard = $textMessage['keyboard'];
         if ($isFirstMessage) {
-            $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
+            $this->senderMessage->sendOrEditMessage($chatId, $text, null, $keyboard);
         } else {
-            $this->senderMessage->editMessageWithKeyboard($chatId, $message_id, $text, $keyboard);
+            $this->senderMessage->sendOrEditMessage($chatId, $text, $message_id, $keyboard);
         }
         $this->repository->updateUser($chatId, '', $username);
         $this->logger->debug('Send welcome message to user', ['chat_id' => $chatId]);
@@ -68,11 +68,11 @@ class AdvPostingFlow
             $textMessage = TextMessagesService::getFinishMessage();
             $text = $textMessage['text'];
             $keyboard = $textMessage['keyboard'];
-            $this->senderMessage->sendMessageWithKeyboard($chatId, $text, $keyboard);
+            $this->senderMessage->sendOrEditMessage($chatId, $text, null, $keyboard);
             $this->logger->debug('User successful post adv', ['chat_id' => $chatId, 'text_adv' => $text_adv]);
         } else {
             $text = TextMessagesService::getTimeLimitMessage($count_minutes);
-            $this->senderMessage->sendMessage($chatId, $text);
+            $this->senderMessage->sendOrEditMessage($chatId, $text);
             $this->logger->debug('User have time limit to post', ['chat_id' => $chatId, 'last_date_post' => $user->date_send_add]);
         }
     }

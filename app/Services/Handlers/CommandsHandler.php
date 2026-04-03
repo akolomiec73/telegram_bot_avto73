@@ -38,7 +38,7 @@ class CommandsHandler
                 break;
             default:
                 $this->logger->debug('User send unknown command', ['chat_id' => $context->chatId, 'text' => $context->text]);
-                $this->senderMessage->sendMessage($context->chatId, 'Неизвестная команда.');
+                $this->senderMessage->sendOrEditMessage($context->chatId, 'Неизвестная команда.');
         }
     }
 }

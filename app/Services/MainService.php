@@ -51,7 +51,7 @@ readonly class MainService
         } elseif ($context->text || $context->photoFileId) {
             $this->handleWithErrorHandling(fn () => $this->handlerText->handle($context), $context);
         } else {
-            $this->sender->sendMessage($context->chatId, TextMessagesService::getUnsupportedMediaMessage());
+            $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getUnsupportedMediaMessage());
             $this->logger->debug('Unsupported message type', ['chat_id' => $context->chatId, 'message' => $message]);
         }
     }
@@ -92,7 +92,7 @@ readonly class MainService
         try {
             $callback();
         } catch (\Throwable $e) {
-            $this->sender->sendMessage($context->chatId, TextMessagesService::getErrorMessage());
+            $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getErrorMessage());
             $this->logger->error('Handler error', [
                 'chat_id' => $context->chatId,
                 'file' => $e->getFile(),

@@ -99,22 +99,10 @@ readonly class CallbacksHandler
             default => null,
         };
         if ($textMessage !== null) {
-            if ($messageId === null) {
-                if ($textMessage['keyboard'] !== null) {
-                    $this->sender->sendMessageWithKeyboard($chatId, $textMessage['text'], $textMessage['keyboard']);
-                } else {
-                    $this->sender->sendMessage($chatId, $textMessage['text']);
-                }
-            } else {
-                if ($textMessage['keyboard'] !== null) {
-                    $this->sender->editMessageWithKeyboard($chatId, $messageId, $textMessage['text'], $textMessage['keyboard']);
-                } else {
-                    $this->sender->editMessage($chatId, $messageId, $textMessage['text']);
-                }
-            }
+            $this->sender->sendOrEditMessage($chatId, $textMessage['text'], $messageId, $textMessage['keyboard']);
             $this->logger->debug('Handle callback to user', ['chat_id' => $chatId, 'button' => $callbackData]);
         } else {
-            $this->sender->sendMessage($chatId, TextMessagesService::getErrorMessage());
+            $this->sender->sendOrEditMessage($chatId, TextMessagesService::getErrorMessage());
             $this->logger->warning('Unknown callback for user', ['chat_id' => $chatId, 'callbackQuery' => $callbackData]);
         }
     }
