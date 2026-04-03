@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Handlers;
 
 use App\Constant\UserStages;
+use App\DTO\UpdateContext;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
 use App\Services\RepositoryService;
@@ -40,9 +41,9 @@ class CallbacksHandler
     /**
      * Обработчик callback (кнопки меню)
      */
-    public function handle(int $chatId, ?string $username, string $callbackQuery, int $message_id): void
+    public function handle(UpdateContext $context): void
     {
-        switch ($callbackQuery) {
+        switch ($context->callbackData) {
             case UserStages::BUTTON_POST_ADV:
             case UserStages::BUTTON_CATEGORY_CAR:
             case UserStages::BUTTON_CATEGORY_DETAIL:
@@ -59,14 +60,14 @@ class CallbacksHandler
             case UserStages::BUTTON_FILTER_APPLY:
             case UserStages::BUTTON_FILTER_PRICE:
             case UserStages::BUTTON_FILTER_STATUS:
-                $this->handleStage($chatId, $callbackQuery, $message_id);
+                $this->handleStage($context->chatId, $context->callbackData, $context->messageId);
                 break;
             case UserStages::BUTTON_BACK_MAIN_MENU:
-                $this->flow->sendWelcomeMessage($chatId, $username, $message_id, false);
+                $this->flow->sendWelcomeMessage($context->chatId, $context->username, $context->messageId, false);
                 break;
             default:
-                $this->senderMessage->sendMessage($chatId, 'Неизвестный callback.');
-                $this->logger->warning('Unknown callback for user', ['chat_id' => $chatId, 'callbackQuery' => $callbackQuery]);
+                $this->senderMessage->sendMessage($context->chatId, 'Неизвестный callback.');
+                $this->logger->warning('Unknown callback for user', ['chat_id' => $context->chatId, 'callbackQuery' => $context->callbackData]);
         }
     }
 

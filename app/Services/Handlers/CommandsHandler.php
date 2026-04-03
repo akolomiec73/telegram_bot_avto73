@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Handlers;
 
+use App\DTO\UpdateContext;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
 use App\Services\SenderService;
@@ -29,15 +30,15 @@ class CommandsHandler
     /**
      * Обработчик команд
      */
-    public function handle(int $chatId, string $text, ?string $username, int $message_id): void
+    public function handle(UpdateContext $context): void
     {
-        switch ($text) {
+        switch ($context->text) {
             case '/start':
-                $this->flow->sendWelcomeMessage($chatId, $username, $message_id, true);
+                $this->flow->sendWelcomeMessage($context->chatId, $context->username, $context->messageId, true);
                 break;
             default:
-                $this->logger->debug('User send unknown command', ['chat_id' => $chatId, 'text' => $text]);
-                $this->senderMessage->sendMessage($chatId, 'Неизвестная команда.');
+                $this->logger->debug('User send unknown command', ['chat_id' => $context->chatId, 'text' => $context->text]);
+                $this->senderMessage->sendMessage($context->chatId, 'Неизвестная команда.');
         }
     }
 }
