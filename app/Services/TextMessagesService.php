@@ -515,4 +515,14 @@ $contactText";
 
 <i>Например: 2000000</i>';
     }
+
+    public static function getUnsupportedMediaMessage(): string
+    {
+        return 'Бот принимает только текстовые сообщения и команды.';
+    }
+
+    public static function getErrorMessage(): string
+    {
+        return 'Произошла ошибка, попробуйте позже.';
+    }
 }
