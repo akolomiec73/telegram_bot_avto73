@@ -29,9 +29,11 @@ class LoggerService
         $this->log('error', $message, $context);
     }
 
+    /**
+     * Создаёт job для асинхронного логирования
+     */
     public function log(string $level, string $message, array $context, bool $dispatch = true): void
     {
-        $context = array_merge($context, ['service' => 'telegram_bot']);
         if ($dispatch) {
             dispatch(new LogJob($level, $message, $context))->onQueue('logs');
 
