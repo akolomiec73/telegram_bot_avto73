@@ -6,7 +6,7 @@ namespace App\Services\Handlers;
 
 use App\Constant\UserStages;
 use App\DTO\UpdateContext;
-use App\Services\AdvValidationService;
+use App\Services\ValidationService;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
 use App\Services\RepositoryService;
@@ -23,7 +23,7 @@ readonly class TextHandler
      *  Для каждого этапа:
      *  - next_stage: следующая стадия ('' — завершение)
      *  - field: поле в БД для сохранения
-     *  - validator: метод валидации в AdvValidationService
+     *  - validator: метод валидации в ValidationService
      *  - message: имя метода TextMessagesService для получения текста
      *  - expect_photo: true если ожидается фото
      */
@@ -98,11 +98,11 @@ readonly class TextHandler
     ];
 
     public function __construct(
-        private AdvPostingFlow $flow,
-        private LoggerService $logger,
-        private SenderService $sender,
-        private AdvValidationService $validator,
-        private RepositoryService $repository,
+        private AdvPostingFlow      $flow,
+        private LoggerService       $logger,
+        private SenderService       $sender,
+        private ValidationService   $validator,
+        private RepositoryService   $repository,
         private TextMessagesService $textMessages,
     ) {}
 

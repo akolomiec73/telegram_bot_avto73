@@ -7,7 +7,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-class AdvValidationService
+class ValidationService
 {
     private const MIN_PRICE = 0;
 

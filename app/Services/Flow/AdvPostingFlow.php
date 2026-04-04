@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Flow;
 
-use App\Services\AdvValidationService;
+use App\Services\ValidationService;
 use App\Services\LoggerService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
@@ -18,13 +18,13 @@ class AdvPostingFlow
 
     protected RepositoryService $repository;
 
-    protected AdvValidationService $validator;
+    protected ValidationService $validator;
 
     public function __construct(
         LoggerService $logger,
         SenderService $senderMessage,
         RepositoryService $repository,
-        AdvValidationService $validator
+        ValidationService $validator
     ) {
         $this->logger = $logger;
         $this->senderMessage = $senderMessage;
