@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Constant;
 
+/**
+ * Наименования callback для кнопок в боте
+ */
 final class CallbackData
 {
     public const BACK_MAIN_MENU = 'back_main_menu';

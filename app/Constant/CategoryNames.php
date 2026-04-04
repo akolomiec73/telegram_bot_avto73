@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Constant;
 
+/**
+ * Наименования категорий для записи в бд
+ */
 final class CategoryNames
 {
     public const CAR = 'Транспорт';
