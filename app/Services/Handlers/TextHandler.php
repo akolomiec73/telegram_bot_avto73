@@ -13,166 +13,210 @@ use App\Services\RepositoryService;
 use App\Services\SenderService;
 use App\Services\TextMessagesService;
 
-class TextHandler
+/**
+ * Обработчик текстовых сообщений и фото.
+ */
+readonly class TextHandler
 {
-    protected AdvPostingFlow $flow;
-
-    protected LoggerService $logger;
-
-    protected SenderService $senderMessage;
-
-    protected AdvValidationService $validator;
-
-    protected RepositoryService $repository;
-
-    protected TextMessagesService $textMessages;
-
-    public function __construct(
-        AdvPostingFlow $flow,
-        LoggerService $logger,
-        SenderService $senderMessage,
-        AdvValidationService $validator,
-        RepositoryService $repository,
-        TextMessagesService $textMessages
-    ) {
-        $this->flow = $flow;
-        $this->logger = $logger;
-        $this->senderMessage = $senderMessage;
-        $this->validator = $validator;
-        $this->repository = $repository;
-        $this->textMessages = $textMessages;
-    }
+    /**
+     * Конфигурация этапов создания объявления.
+     *  Для каждого этапа:
+     *  - next_stage: следующая стадия ('' — завершение)
+     *  - field: поле в БД для сохранения
+     *  - validator: метод валидации в AdvValidationService
+     *  - message: имя метода TextMessagesService для получения текста
+     *  - expect_photo: true если ожидается фото
+     */
+    private const STAGE_CONFIG = [
+        UserStages::POST_ADV_STEP1 => [
+            'next_stage' => UserStages::POST_ADV_STEP2,
+            'field' => 'adv_car_mark',
+            'validator' => 'validateTitle',
+            'message' => 'getCarYearMessage',
+        ],
+        UserStages::POST_ADV_STEP2 => [
+            'next_stage' => UserStages::POST_ADV_STEP3,
+            'field' => 'adv_car_year_realise',
+            'validator' => 'validateCarYear',
+            'message' => 'getPriceMessage',
+        ],
+        UserStages::POST_ADV_STEP3 => [
+            'next_stage' => UserStages::POST_ADV_STEP4,
+            'field' => 'adv_price',
+            'validator' => 'validatePrice',
+            'message' => 'getDescriptionMessage',
+        ],
+        UserStages::POST_ADV_STEP4 => [
+            'next_stage' => UserStages::POST_ADV_STEP5,
+            'field' => 'adv_description',
+            'validator' => 'validateDescription',
+            'message' => 'getPhotoMessage',
+        ],
+        UserStages::POST_ADV_STEP5 => [
+            'next_stage' => '',
+            'field' => 'adv_photo',
+            'validator' => 'validateIsPhoto',
+            'message' => 'getContactMessage',
+            'expect_photo' => true,
+        ],
+        UserStages::POST_ADV_STEP6 => [
+            'next_stage' => '',
+            'field' => 'adv_extra_contact',
+            'validator' => 'validateExtraContact',
+            'message' => null,
+        ],
+        UserStages::POST_ADV_DETAIL_STEP1 => [
+            'next_stage' => UserStages::POST_ADV_DETAIL_STEP2,
+            'field' => 'adv_car_mark',
+            'validator' => 'validateTitle',
+            'message' => 'getPriceMessage',
+        ],
+        UserStages::POST_ADV_DETAIL_STEP2 => [
+            'next_stage' => UserStages::POST_ADV_STEP4,
+            'field' => 'adv_price',
+            'validator' => 'validatePrice',
+            'message' => 'getDescriptionMessage',
+        ],
+    ];
 
     /**
-     * Обработчик обычных текстовых сообщений
+     * Конфигурация этапов фильтрации по цене.
+     */
+    private const FILTER_STAGES = [
+        UserStages::SET_FILTER_PRICE_MIN => [
+            'next_stage' => UserStages::SET_FILTER_PRICE_MAX,
+            'field' => 'filter_price_min',
+            'validator' => 'validatePrice',
+            'message' => 'getFilterPriceMaxMessage',
+        ],
+        UserStages::SET_FILTER_PRICE_MAX => [
+            'next_stage' => UserStages::SET_FILTER_PRICE_APPLY,
+            'field' => 'filter_price_max',
+            'validator' => 'validatePrice',
+            'message' => null,
+        ],
+    ];
+
+    public function __construct(
+        private AdvPostingFlow $flow,
+        private LoggerService $logger,
+        private SenderService $sender,
+        private AdvValidationService $validator,
+        private RepositoryService $repository,
+        private TextMessagesService $textMessages,
+    ) {}
+
+    /**
+     * Основная точка входа в обработчик
      */
     public function handle(UpdateContext $context): void
     {
-        if ($this->validator->validateMainText($context->text)) {
-            $user = $this->repository->getUser($context->chatId);
-            if ($user !== null) {
-                switch ($user['stage']) {
-                    case UserStages::POST_ADV_STEP1: // получаем марку(название)
-                        $this->handleStage($context->text, UserStages::POST_ADV_STEP2, 'adv_car_mark', $context->chatId);
-                        break;
-                    case UserStages::POST_ADV_STEP2: // получаем год выпуска
-                        $this->handleStage($context->text, UserStages::POST_ADV_STEP3, 'adv_car_year_realise', $context->chatId);
-                        break;
-                    case UserStages::POST_ADV_STEP3: // получаем цену
-                    case UserStages::POST_ADV_DETAIL_STEP2:
-                        $this->handleStage($context->text, UserStages::POST_ADV_STEP4, 'adv_price', $context->chatId);
-                        break;
-                    case UserStages::POST_ADV_STEP4: // получаем описание
-                        $this->handleStage($context->text, UserStages::POST_ADV_STEP5, 'adv_description', $context->chatId);
-                        break;
-                    case UserStages::POST_ADV_STEP5: // получаем фотку
-                        if ($context->username) {
-                            $this->handleStage($context->photoFileId, '', 'adv_photo', $context->chatId);
-                        } else {
-                            $this->handleStage($context->photoFileId, UserStages::POST_ADV_STEP6, 'adv_photo', $context->chatId);
-                        }
-                        break;
-                    case UserStages::POST_ADV_STEP6: // получаем доп контакты
-                        $this->handleStage($context->text, UserStages::POST_ADV_STEP7, 'adv_extra_contact', $context->chatId);
-                        break;
-                    case UserStages::POST_ADV_DETAIL_STEP1: // получаем Название запчасти
-                        $this->handleStage($context->text, UserStages::POST_ADV_DETAIL_STEP2, 'adv_car_mark', $context->chatId);
-                        break;
-                    case UserStages::SET_FILTER_PRICE_MIN:
-                        $this->handleStageFilters($context->text, UserStages::SET_FILTER_PRICE_MAX, 'filter_price_min', $context->chatId);
-                        break;
-                    case UserStages::SET_FILTER_PRICE_MAX:
-                        $this->handleStageFilters($context->text, UserStages::SET_FILTER_PRICE_APPLY, 'filter_price_max', $context->chatId);
-                        break;
-                    default:
-                        $this->senderMessage->sendOrEditMessage($context->chatId, 'Неопределённый stage');
-                        $this->logger->debug('Unknown stage for user', ['chat_id' => $context->chatId, 'text' => $context->text]);
-                }
-            } else {
-                $this->logger->error('User not found', ['chat_id' => $context->chatId]);
-            }
-        } else {
-            $this->senderMessage->sendOrEditMessage($context->chatId, 'Некорректный текст сообщения');
-            $this->logger->warning('User send bad text', ['chat_id' => $context->chatId, 'text' => $context->text]);
+        $user = $this->repository->getUser($context->chatId);
+        if ($user === null) {
+            $this->logger->error('User not found', ['chat_id' => $context->chatId]);
+            $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getErrorMessage());
+
+            return;
         }
-    }
+        if (isset(self::FILTER_STAGES[$user['stage']])) {
+            $this->processFilterStage($context, $user['stage']);
 
-    /**
-     * Обработчик стадии в handle
-     */
-    private function handleStage(?string $text, string $stage, string $column_name, int $chatId): void
-    {
-        $validated = $this->validateStage($stage, $text);
-        if ($validated['result']) {
-            $text_message = $this->getTextMessageForStage($stage);
-            $this->repository->updateUser($chatId, $stage);
-            $this->repository->updateTempAdv($chatId, [$column_name => $text]);
-            if ($text_message !== null) {
-                $this->senderMessage->sendOrEditMessage($chatId, $text_message);
-            }
-            if ($stage == '' || $stage == UserStages::POST_ADV_STEP7) {
-                $this->flow->finishAdv($chatId);
-            }
-        } else {
-            $this->senderMessage->sendOrEditMessage($chatId, $validated['message']);
-            $this->logger->debug('Send NOT validated message to user', ['chat_id' => $chatId, 'message' => $validated['message']]);
+            return;
         }
+        if (isset(self::STAGE_CONFIG[$user['stage']])) {
+            $this->processAdvStage($context, $user['stage'], $user);
+
+            return;
+        }
+        $this->logger->debug('Unknown stage for user', ['chat_id' => $context->chatId, 'stage' => $user['stage']]);
+        $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getUnknownCommandMessage());
     }
 
     /**
-     * Валидация стадии
+     * Обрабатывает этап создания объявления.
      */
-    private function validateStage(string $stage, ?string $text): array
+    private function processAdvStage(UpdateContext $context, string $stage, array $user): void
     {
-        return match ($stage) {
-            UserStages::POST_ADV_STEP2 => ['result' => true, 'message' => null], // title пока не валидируем
-            UserStages::POST_ADV_STEP3 => $this->validator->validateCarYear($text),
-            UserStages::POST_ADV_STEP4,
-            UserStages::SET_FILTER_PRICE_MAX,
-            UserStages::SET_FILTER_PRICE_APPLY => $this->validator->validatePrice($text),
-            UserStages::POST_ADV_STEP5 => $this->validator->validateDescription($text),
-            UserStages::POST_ADV_STEP6, '' => $this->validator->validateIsPhoto($text),
-            UserStages::POST_ADV_STEP7 => $this->validator->validateExtraContact($text),
-            UserStages::POST_ADV_DETAIL_STEP2 => $this->validator->validateTitle($text),
-            default => ['result' => false, 'message' => 'Не смог определить правило валидации'],
-        };
+        $config = self::STAGE_CONFIG[$stage];
+        $input = $this->getAndValidateInput($context, $config, $stage);
+        if ($input === null) {
+            return;
+        }
+        $this->repository->updateTempAdv($context->chatId, [$config['field'] => $input]);
+        $nextStage = $this->determineNextStage($stage, $config, $user);
+        // Завершение публикации, если достигнут финал
+        if ($nextStage === '') {
+            $this->repository->updateUser($context->chatId, $nextStage);
+            $this->flow->finishAdv($context->chatId);
+
+            return;
+        }
+        $this->repository->updateUser($context->chatId, $nextStage);
+        $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::{$config['message']}());
     }
 
     /**
-     * Получение текста сообщения в handleStage
+     * Получает и валидирует входные данные в зависимости от ожидаемого типа.
      */
-    private function getTextMessageForStage(?string $stage, ?int $chatId = null): string|array
+    private function getAndValidateInput(UpdateContext $context, array $config, string $stage): ?string
     {
-        return match ($stage) {
-            UserStages::POST_ADV_STEP2 => TextMessagesService::getCarYearMessage(),
-            UserStages::POST_ADV_STEP3, UserStages::POST_ADV_DETAIL_STEP2 => TextMessagesService::getPriceMessage(),
-            UserStages::POST_ADV_STEP4 => TextMessagesService::getDescriptionMessage(),
-            UserStages::POST_ADV_STEP5 => TextMessagesService::getPhotoMessage(),
-            UserStages::POST_ADV_STEP6 => TextMessagesService::getContactMessage(),
-            UserStages::SET_FILTER_PRICE_MAX => TextMessagesService::getFilterPriceMaxMessage(),
-            UserStages::SET_FILTER_PRICE_APPLY => $this->textMessages->getFilterListMessage($chatId),
-            default => null,
-        };
-    }
-
-    /**
-     * Обработчик стадии в handle для фильтров
-     */
-    private function handleStageFilters(?string $text, string $stage, string $column_name, int $chatId): void
-    {
-        $validated = $this->validateStage($stage, $text);
-        if ($validated['result']) {
-            $text_message = $this->getTextMessageForStage($stage, $chatId);
-            $this->repository->updateUser($chatId, $stage);
-            $this->repository->updateFilterPrice($chatId, $column_name, $text);
-            if ($stage == UserStages::SET_FILTER_PRICE_MAX) {
-                $this->senderMessage->sendOrEditMessage($chatId, $text_message);
-            } else {
-                $this->senderMessage->sendOrEditMessage($chatId, $text_message['text'], null, $text_message['keyboard']);
-            }
+        if (isset($config['expect_photo'])) {
+            $input = $context->photoFileId;
         } else {
-            $this->senderMessage->sendOrEditMessage($chatId, $validated['message']);
-            $this->logger->debug('Send NOT validated message to user', ['chat_id' => $chatId, 'message' => $validated['message']]);
+            $input = $context->text;
+        }
+        $validation = $this->validator->{$config['validator']}($input);
+        if (! $validation['result']) {
+            $this->sender->sendOrEditMessage($context->chatId, $validation['message']);
+            $this->logger->debug('Validation failed', ['chat_id' => $context->chatId, 'validationMessage' => $validation['message']]);
+
+            return null;
+        }
+
+        return $input;
+    }
+
+    /**
+     * Определяет следующую стадию с учётом специальных правил (например, пропуск шага при наличии username).
+     */
+    private function determineNextStage(string $stage, array $config, array $user): string
+    {
+        $nextStage = $config['next_stage'];
+        if ($stage === UserStages::POST_ADV_STEP5) {
+            if (! empty($user['username'])) {
+                return '';
+            }
+
+            return UserStages::POST_ADV_STEP6;
+        }
+
+        return $nextStage;
+    }
+
+    /**
+     * Обрабатывает этапы установки фильтра цены.
+     */
+    private function processFilterStage(UpdateContext $context, string $stage): void
+    {
+        $config = self::FILTER_STAGES[$stage];
+        $validation = $this->validator->{$config['validator']}($context->text);
+        if (! $validation['result']) {
+            $this->sender->sendOrEditMessage($context->chatId, $validation['message']);
+
+            return;
+        }
+        $this->repository->updateFilterPrice($context->chatId, $config['field'], $context->text);
+        $nextStage = $config['next_stage'];
+
+        if ($nextStage === UserStages::SET_FILTER_PRICE_APPLY) {
+            $this->repository->updateUser($context->chatId, $nextStage);
+            $finalMessage = $this->textMessages->getFilterListMessage($context->chatId);
+            $this->sender->sendOrEditMessage($context->chatId, $finalMessage['text'], null, $finalMessage['keyboard']);
+        } else {
+            $this->repository->updateUser($context->chatId, $nextStage);
+            if ($config['message'] !== null) {
+                $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::{$config['message']}());
+            }
         }
     }
 }
