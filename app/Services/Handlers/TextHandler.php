@@ -6,12 +6,12 @@ namespace App\Services\Handlers;
 
 use App\Constant\UserStages;
 use App\DTO\UpdateContext;
-use App\Services\ValidationService;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
 use App\Services\TextMessagesService;
+use App\Services\ValidationService;
 
 /**
  * Обработчик текстовых сообщений и фото.
@@ -98,11 +98,11 @@ readonly class TextHandler
     ];
 
     public function __construct(
-        private AdvPostingFlow      $flow,
-        private LoggerService       $logger,
-        private SenderService       $sender,
-        private ValidationService   $validator,
-        private RepositoryService   $repository,
+        private AdvPostingFlow $flow,
+        private LoggerService $logger,
+        private SenderService $sender,
+        private ValidationService $validator,
+        private RepositoryService $repository,
         private TextMessagesService $textMessages,
     ) {}
 
