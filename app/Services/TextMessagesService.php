@@ -89,7 +89,7 @@ class TextMessagesService
 
     public static function getCorrectPriceMessage(): string
     {
-        return 'Введите цену в российских рублях.
+        return 'Укажите корректную в российских рублях.
 
 <i>Например: 150000</i>';
     }
@@ -105,9 +105,9 @@ class TextMessagesService
 
     public static function getTimeLimitMessage(int $count_minutes): string
     {
-        return 'Публиковать обьявление можно раз <b>в 12 часов</b>
+        return 'Публиковать обьявление можно раз <b>в 2 часа</b>
 
-Повторите попытку через <b>'.(720 - $count_minutes).'</b> минут.';
+Повторите попытку через <b>'.(120 - $count_minutes).'</b> минут.';
     }
 
     public static function getContactMessage(): string
@@ -333,9 +333,9 @@ $contactText";
     {
         return '📝 <b>Описание</b>
 
-Укажите <b>Корректное</b> описание объявления.
+Укажите <b>Корректное</b> описание объявления, не более 1000 символов.
 
-<b>ВАЖНО! Запрещено добавлять любые контакты, хештеги и ссылки, иначе объявление может быть удалено!</b>';
+<b>ВАЖНО! Запрещено добавлять любые контакты, хештеги, ссылки и символы!</b>';
     }
 
     public static function getSearchMessage(): array
@@ -529,5 +529,20 @@ $contactText";
     public static function getUnknownCommandMessage(): string
     {
         return 'Неизвестная команда.';
+    }
+
+    public static function getCorrectTitleMessage(): string
+    {
+        return 'Отправьте текст, не более 100 символов.';
+    }
+
+    public static function getCorrectPhotoMessage(): string
+    {
+        return 'Отправьте фотографию, а не файл\текст';
+    }
+
+    public static function getCorrectExtraContactMessage(): string
+    {
+        return 'Отправьте текст, не более 100 символов';
     }
 }
