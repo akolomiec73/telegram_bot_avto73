@@ -1,57 +1,51 @@
 <?php
 
-/*
- * Сервис валидации
- */
 declare(strict_types=1);
 
 namespace App\Services;
 
+/**
+ * Сервис валидации
+ */
 class ValidationService
 {
-    private const MIN_PRICE = 0;
-
     private const MAX_DESCRIPTION_LENGTH = 1000;
 
-    private const MAX_CONTACT_LENGTH = 100;
-
-    private const TIME_LIMIT_MINUTES = 720;
-
-    private const ALLOWED_TAGS = '<b><i><u><strong><em>';
+    private const MAX_TEXT_LENGTH = 100;
 
     /**
-     * Валидация основного сообщения от пользователя
+     * Базовая валидация запрещает любые HTML-теги
      */
-    public function validateMainText(?string $text): bool
+    private function basicValidate(?string $text): bool
     {
-        if (empty($text)) {
-            return true;
-        }
-        $sanitized = htmlspecialchars(strip_tags($text, self::ALLOWED_TAGS), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        return $sanitized === $text;
+        return strip_tags($text) === $text;
     }
 
     /**
-     * Валидация года выпуска авто (4 цифры)
+     * Валидация года выпуска авто (4 символа и Год должен быть от 1901 до текущего+1)
      */
     public function validateCarYear(?string $year): array
     {
-        $resultValidate['message'] = TextMessagesService::getCorrectCarYearMessage();
-        $resultValidate['result'] = ! empty($year) && preg_match('#^[0-9]{4}$#', $year) === 1;
+        $yearInt = (int) $year;
+        $resultValidate = preg_match('/^\d{4}$/', (string) $year) &&
+            $yearInt > 1900 &&
+            $yearInt < date('Y') + 1;
 
-        return $resultValidate;
+        return [
+            'result' => $resultValidate,
+            'message' => TextMessagesService::getCorrectCarYearMessage(),
+        ];
     }
 
     /**
-     * Валидация цены (положительное число)
+     * Валидация цены (положительное, целое число)
      */
     public function validatePrice(?string $price): array
     {
-        $resultValidate['message'] = TextMessagesService::getCorrectPriceMessage();
-        $resultValidate['result'] = ! empty($price) && is_numeric($price) && (float) $price > self::MIN_PRICE;
-
-        return $resultValidate;
+        return [
+            'result' => filter_var($price, FILTER_VALIDATE_INT) !== false && $price > 0,
+            'message' => TextMessagesService::getCorrectPriceMessage(),
+        ];
     }
 
     /**
@@ -59,10 +53,7 @@ class ValidationService
      */
     public function validateDescription(?string $description): array
     {
-        $resultValidate['message'] = TextMessagesService::getCorrectDescriptionMessage();
-        $resultValidate['result'] = ! empty($description) && mb_strlen($description, 'UTF-8') <= self::MAX_DESCRIPTION_LENGTH;
-
-        return $resultValidate;
+        return $this->validateText($description, self::MAX_DESCRIPTION_LENGTH, TextMessagesService::getCorrectDescriptionMessage());
     }
 
     /**
@@ -70,10 +61,10 @@ class ValidationService
      */
     public function validateIsPhoto(?string $fileId): array
     {
-        $resultValidate['message'] = 'Отправьте фотографию, а не файл\текст';
-        $resultValidate['result'] = ! empty($fileId);
-
-        return $resultValidate;
+        return [
+            'result' => ! empty($fileId),
+            'message' => TextMessagesService::getCorrectPhotoMessage(),
+        ];
     }
 
     /**
@@ -81,39 +72,24 @@ class ValidationService
      */
     public function validateExtraContact(?string $text): array
     {
-        $resultValidate['message'] = 'Отправьте текст, не более 100 символов';
-        $resultValidate['result'] = ! empty($text) && mb_strlen($text, 'UTF-8') <= self::MAX_CONTACT_LENGTH;
-
-        return $resultValidate;
+        return $this->validateText($text, self::MAX_TEXT_LENGTH, TextMessagesService::getCorrectExtraContactMessage());
     }
 
     /**
-     * Валидация названия для запчастей (не пустое не более 100 символов)
+     * Валидация названия\марки авто (не пустое не более 100 символов)
      */
     public function validateTitle(?string $text): array
     {
-        $resultValidate['message'] = 'Отправьте текст, не более 100 символов';
-        $resultValidate['result'] = ! empty($text) && mb_strlen($text, 'UTF-8') <= self::MAX_CONTACT_LENGTH;
-
-        return $resultValidate;
+        return $this->validateText($text, self::MAX_TEXT_LENGTH, TextMessagesService::getCorrectTitleMessage());
     }
 
-    /**
-     * Валидация лимита отправки объявлений
-     */
-    public function validateTimeLimit(?string $date_post): int|bool
+    private function validateText(?string $text, int $maxLength, string $errorMessage): array
     {
-        if ($date_post === null) {
-            return true;
-        }
-        $date_now = date('Y-m-d H:i:s');
-        $diff = strtotime($date_post) - strtotime($date_now);
-        $count_minutes = (int) abs(round($diff / 60));
-        /* Некорректно, нужно переделать
-          if ($count_minutes < self::TIME_LIMIT_MINUTES) {
-           return false;
-        }*/
+        $isValid = $text !== null && $text !== '' && mb_strlen($text, 'UTF-8') <= $maxLength && $this->basicValidate($text);
 
-        return $count_minutes;
+        return [
+            'result' => $isValid,
+            'message' => $errorMessage,
+        ];
     }
 }
