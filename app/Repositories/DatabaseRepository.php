@@ -1,8 +1,5 @@
 <?php
 
-/*
-* Методы по работе с БД
-*/
 declare(strict_types=1);
 
 namespace App\Repositories;
@@ -13,15 +10,18 @@ use App\Models\UserFilters;
 use App\Repositories\Contracts\DatabaseRepositoryInterface;
 use App\Services\LoggerService;
 
-class DatabaseRepository implements DatabaseRepositoryInterface
+/**
+ * Методы по работе с БД
+ */
+readonly class DatabaseRepository implements DatabaseRepositoryInterface
 {
-    protected LoggerService $logger;
+    public function __construct(
+        private LoggerService $logger
+    ) {}
 
-    public function __construct(LoggerService $logger)
-    {
-        $this->logger = $logger;
-    }
-
+    /**
+     * Получение информации о пользователе
+     */
     public function getUserInfo(int $chatId): ?BotUsers
     {
         try {
@@ -31,9 +31,11 @@ class DatabaseRepository implements DatabaseRepositoryInterface
 
             return null;
         }
-
     }
 
+    /**
+     * Создание строки о пользователе
+     */
     public function setUserData(int $chatId, ?string $username, string $stage): void
     {
         try {
@@ -48,6 +50,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Обновление строки о пользователе
+     */
     public function updateUserData(int $chatId, array $data): void
     {
         try {
@@ -58,6 +63,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Обновление таблицы с создаваемым объявлением
+     */
     public function updateTempAdvData(int $chatId, array $data): void
     {
         try {
@@ -69,6 +77,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Получение даты последней публикации пользователя
+     */
     public function getUserDatePost(int $chatId): ?BotUsers
     {
         try {
@@ -80,6 +91,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Обновление даты последней публикации пользователя
+     */
     public function updateUserDatePost(int $chatId, string $date): void
     {
         try {
@@ -90,14 +104,17 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Получение полной информации о создаваемом объявлении
+     */
     public function getAdvRow(int $chatId): ?TempAdvUser
     {
         try {
             $user = BotUsers::with('tempAdv')->where('chat_id', $chatId)->first();
-            $this->logger->debug('DB getAdvRow', ['chat_id' => $chatId, 'id_row' => $user->id]);
             if (! $user || ! $user->tempAdv) {
                 return null;
             }
+            $this->logger->debug('DB getAdvRow', ['chat_id' => $chatId, 'id_row' => $user->id]);
 
             return $user->tempAdv;
         } catch (\Exception $e) {
@@ -107,6 +124,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Получение значений фильтров пользователя
+     */
     public function getFilterList(int $chatId): ?UserFilters
     {
         try {
@@ -124,6 +144,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Создание строки значений фильтров пользователя
+     */
     private function setUserFilters(int $chatId): ?UserFilters
     {
         try {
@@ -143,6 +166,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Обновление значений фильтров пользователя
+     */
     public function updateFilterCategory(int $chatId, string $stage): void
     {
         try {
@@ -160,6 +186,9 @@ class DatabaseRepository implements DatabaseRepositoryInterface
         }
     }
 
+    /**
+     * Обновление значений фильтров Цены пользователя
+     */
     public function updateFilterPrice(int $chatId, string $column, ?string $value): void
     {
         try {
@@ -167,7 +196,7 @@ class DatabaseRepository implements DatabaseRepositoryInterface
             UserFilters::where('id_bot_user', $user->id)->update([$column => $value]);
             $this->logger->debug('DB updateFilterPrice', ['chat_id' => $chatId, 'column' => $column, 'value' => $value]);
         } catch (\Exception $e) {
-            $this->logger->error('ERROR DB updateFilterCategory', ['error_text' => $e->getMessage(), 'chat_id' => $chatId, 'column' => $column, 'value' => $value]);
+            $this->logger->error('ERROR DB updateFilterPrice', ['error_text' => $e->getMessage(), 'chat_id' => $chatId, 'column' => $column, 'value' => $value]);
         }
     }
 }

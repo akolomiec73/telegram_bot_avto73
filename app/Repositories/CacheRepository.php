@@ -1,8 +1,5 @@
 <?php
 
-/*
-* Методы по работе с кешем (Redis)
-*/
 declare(strict_types=1);
 
 namespace App\Repositories;
@@ -11,19 +8,24 @@ use App\Repositories\Contracts\CacheRepositoryInterface;
 use App\Services\LoggerService;
 use Illuminate\Support\Facades\Redis;
 
-class CacheRepository implements CacheRepositoryInterface
+/**
+ * Методы по работе с кэшем (Redis)
+ */
+readonly class CacheRepository implements CacheRepositoryInterface
 {
-    protected LoggerService $logger;
+    private const USER_KEY_PREFIX = 'user:';
 
-    public function __construct(LoggerService $logger)
-    {
-        $this->logger = $logger;
-    }
+    public function __construct(
+        private LoggerService $logger
+    ) {}
 
+    /**
+     * Получение информации о пользователе
+     */
     public function getUserInfo(int $chatId): ?array
     {
         try {
-            $result = Redis::hgetall("user:$chatId");
+            $result = Redis::hgetall(self::USER_KEY_PREFIX.$chatId);
             $this->logger->debug('Redis getUserInfo', ['chat_id' => $chatId, 'result' => $result]);
 
             return $result;
@@ -32,17 +34,19 @@ class CacheRepository implements CacheRepositoryInterface
 
             return null;
         }
-
     }
 
+    /**
+     * Запись информации о пользователе в кэш
+     */
     public function setUserData(int $chatId, ?string $username, string $stage): void
     {
         try {
-            Redis::hset("user:$chatId", 'stage', $stage);
+            Redis::hset(self::USER_KEY_PREFIX.$chatId, 'stage', $stage);
             if ($username !== null) {
-                Redis::hset("user:$chatId", 'username', $username);
+                Redis::hset(self::USER_KEY_PREFIX.$chatId, 'username', $username);
             }
-            Redis::expire("user:$chatId", 3600);
+            Redis::expire(self::USER_KEY_PREFIX.$chatId, 3600);
             $this->logger->debug('Redis setUserData', ['chat_id' => $chatId, 'stage' => $stage, 'username' => $username]);
         } catch (\Exception $e) {
             $this->logger->error('ERROR Redis setUserData', ['error_text' => $e->getMessage(), 'chat_id' => $chatId, 'stage' => $stage, 'username' => $username]);

@@ -1,29 +1,26 @@
 <?php
 
 declare(strict_types=1);
-/*
- * Сервис координации репозиториев
- */
 
 namespace App\Services;
 
 use App\Repositories\Contracts\CacheRepositoryInterface;
 use App\Repositories\Contracts\DatabaseRepositoryInterface;
 
-class RepositoryService
+/**
+ * Сервис координации репозиториев (БД, Redis)
+ */
+readonly class RepositoryService
 {
-    private DatabaseRepositoryInterface $dbRepo;
-
-    private CacheRepositoryInterface $cacheRepo;
-
     public function __construct(
-        DatabaseRepositoryInterface $dbRepo,
-        CacheRepositoryInterface $cacheRepo
-    ) {
-        $this->dbRepo = $dbRepo;
-        $this->cacheRepo = $cacheRepo;
-    }
+        private DatabaseRepositoryInterface $dbRepo,
+        private CacheRepositoryInterface $cacheRepo
+    ) {}
 
+    /**
+     * Получение информации о пользователе(стадия, username)
+     * Если нет в кэше - берём из бд и записываем в кэш
+     */
     public function getUser(int $chatId): ?array
     {
         $user = $this->cacheRepo->getUserInfo($chatId);
@@ -42,6 +39,11 @@ class RepositoryService
         return $user;
     }
 
+    /**
+     * Обновление информации о пользователе
+     * Если нет в бд - создаём в бд и пищем в кеш
+     * Если есть в бд - если значение полей отличается от значений в бд - меняем
+     */
     public function updateUser(int $chatId, string $stage, ?string $username = null): void
     {
         $user = $this->dbRepo->getUserInfo($chatId);
@@ -57,42 +59,63 @@ class RepositoryService
                 $updateData['username'] = $username;
             }
             if ($updateData !== null) {
-                $this->cacheRepo->setUserData($chatId, $username, $stage);
                 $this->dbRepo->updateUserData($chatId, $updateData);
+                $this->cacheRepo->setUserData($chatId, $username, $stage);
             }
         }
     }
 
+    /**
+     * Обновление информации о создаваемом объявлении пользователя
+     */
     public function updateTempAdv(int $chatId, array $data): void
     {
         $this->dbRepo->updateTempAdvData($chatId, $data);
     }
 
+    /**
+     * Получение даты последней публикации пользователя
+     */
     public function getUserDatePost(int $chatId): ?object
     {
         return $this->dbRepo->getUserDatePost($chatId);
     }
 
+    /**
+     * Обновление даты последней публикации пользователя
+     */
     public function updateUserDatePost(int $chatId, string $date): void
     {
         $this->dbRepo->updateUserDatePost($chatId, $date);
     }
 
+    /**
+     * Получение информации о создаваемом объявлении пользователя
+     */
     public function getAdvRow(int $chatId): ?object
     {
         return $this->dbRepo->getAdvRow($chatId);
     }
 
+    /**
+     * Получение значений фильтров пользователя
+     */
     public function getFilterList(int $chatId): ?object
     {
         return $this->dbRepo->getFilterList($chatId);
     }
 
+    /**
+     * Обновление значений фильтров пользователя
+     */
     public function updateFilter(int $chatId, string $stage): void
     {
         $this->dbRepo->updateFilterCategory($chatId, $stage);
     }
 
+    /**
+     * Обновление значений фильтров Цены пользователя
+     */
     public function updateFilterPrice(int $chatId, string $column, ?string $value): void
     {
         $this->dbRepo->updateFilterPrice($chatId, $column, $value);
