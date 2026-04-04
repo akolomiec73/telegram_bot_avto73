@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\Flow;
 
-use App\Services\ValidationService;
 use App\Services\LoggerService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
 use App\Services\TextMessagesService;
+use App\Services\ValidationService;
 
 class AdvPostingFlow
 {
@@ -55,8 +55,8 @@ class AdvPostingFlow
     public function finishAdv(int $chatId): void
     {
         $user = $this->repository->getUserDatePost($chatId);
-        $count_minutes = $this->validator->validateTimeLimit($user->date_send_add);
-        if ($count_minutes) {
+        $count_minutes = $this->getCountMinutes($user->date_send_add);
+        if ($count_minutes >= 120) {
             $this->repository->updateUserDatePost($chatId, date('Y-m-d H:i:s'));
             $temp_adv_row = $this->repository->getAdvRow($chatId);
             $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $user->username);
@@ -75,5 +75,19 @@ class AdvPostingFlow
             $this->senderMessage->sendOrEditMessage($chatId, $text);
             $this->logger->debug('User have time limit to post', ['chat_id' => $chatId, 'last_date_post' => $user->date_send_add]);
         }
+    }
+
+    /**
+     * Подсчет кол-ва минут после последней публикации
+     */
+    private function getCountMinutes(?string $date_post): int
+    {
+        if ($date_post === null) {
+            return 120;
+        }
+        $date_now = date('Y-m-d H:i:s');
+        $diff = strtotime($date_now) - strtotime($date_post);
+
+        return (int) abs(round($diff / 60));
     }
 }
