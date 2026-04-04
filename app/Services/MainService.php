@@ -78,7 +78,7 @@ readonly class MainService
     {
         $photo = $message->getPhoto();
         if (! empty($photo)) {
-            return $photo[array_key_last($photo)]->getFileId();
+            return $photo[count($photo) - 1]->getFileId();
         }
 
         return null;
