@@ -8,30 +8,16 @@ use App\Services\LoggerService;
 use App\Services\MessageService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
-use App\Services\ValidationService;
 
-class AdvPostingFlow
+readonly class AdvPostingFlow
 {
-    protected LoggerService $logger;
-
-    protected SenderService $senderMessage;
-
-    protected RepositoryService $repository;
-
-    protected ValidationService $validator;
-
     public function __construct(
-        LoggerService $logger,
-        SenderService $senderMessage,
-        RepositoryService $repository,
-        ValidationService $validator,
-        private MessageService $messageService
-    ) {
-        $this->logger = $logger;
-        $this->senderMessage = $senderMessage;
-        $this->repository = $repository;
-        $this->validator = $validator;
-    }
+        private LoggerService $logger,
+        private SenderService $senderMessage,
+        private RepositoryService $repository,
+        private MessageService $messageService,
+        private int $timeLimitToPost,
+    ) {}
 
     /**
      * Отправка приветственного сообщения
@@ -39,12 +25,10 @@ class AdvPostingFlow
     public function sendWelcomeMessage(int $chatId, ?string $username, int $message_id, bool $isFirstMessage): void
     {
         $textMessage = $this->messageService->getStartMessage();
-        $text = $textMessage['text'];
-        $keyboard = $textMessage['keyboard'];
         if ($isFirstMessage) {
-            $this->senderMessage->sendOrEditMessage($chatId, $text, null, $keyboard);
+            $this->senderMessage->sendOrEditMessage($chatId, $textMessage['text'], null, $textMessage['keyboard']);
         } else {
-            $this->senderMessage->sendOrEditMessage($chatId, $text, $message_id, $keyboard);
+            $this->senderMessage->sendOrEditMessage($chatId, $textMessage['text'], $message_id, $textMessage['keyboard']);
         }
         $this->repository->updateUser($chatId, '', $username);
         $this->logger->debug('Send welcome message to user', ['chat_id' => $chatId]);
@@ -53,28 +37,28 @@ class AdvPostingFlow
     /**
      * Публикация объявления
      */
-    public function finishAdv(int $chatId): void
+    public function finishAdv(int $chatId): bool
     {
         $user = $this->repository->getUserDatePost($chatId);
         $count_minutes = $this->getCountMinutes($user->date_send_add);
-        if ($count_minutes >= 120) {
-            $this->repository->updateUserDatePost($chatId, date('Y-m-d H:i:s'));
+        if ($count_minutes >= $this->timeLimitToPost) {
             $temp_adv_row = $this->repository->getAdvRow($chatId);
             $text_adv = $this->messageService->getFullAdvMessage($temp_adv_row, $user->username);
             $this->senderMessage->sendPostInPublic($temp_adv_row->adv_photo, $text_adv);
+            $this->repository->updateUserDatePost($chatId, date('Y-m-d H:i:s'));
             /*
              * тут будет логика отправки пользователям по фильтрам
              *
              */
             $textMessage = $this->messageService->getFinishMessage();
-            $text = $textMessage['text'];
-            $keyboard = $textMessage['keyboard'];
-            $this->senderMessage->sendOrEditMessage($chatId, $text, null, $keyboard);
+            $this->senderMessage->sendOrEditMessage($chatId, $textMessage['text'], null, $textMessage['keyboard']);
             $this->logger->debug('User successful post adv', ['chat_id' => $chatId, 'text_adv' => $text_adv]);
+            return true;
         } else {
             $text = $this->messageService->getTimeLimitMessage($count_minutes);
             $this->senderMessage->sendOrEditMessage($chatId, $text);
             $this->logger->debug('User have time limit to post', ['chat_id' => $chatId, 'last_date_post' => $user->date_send_add]);
+            return false;
         }
     }
 
@@ -84,7 +68,7 @@ class AdvPostingFlow
     private function getCountMinutes(?string $date_post): int
     {
         if ($date_post === null) {
-            return 120;
+            return $this->timeLimitToPost;
         }
         $date_now = date('Y-m-d H:i:s');
         $diff = strtotime($date_now) - strtotime($date_post);
