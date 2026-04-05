@@ -149,6 +149,7 @@ readonly class TextHandler
             if ($this->flow->finishAdv($context->chatId)) {
                 $this->repository->updateUser($context->chatId, $nextStage);
             }
+
             return;
         }
         $this->repository->updateUser($context->chatId, $nextStage);
