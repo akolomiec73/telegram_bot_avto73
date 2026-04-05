@@ -7,15 +7,16 @@ namespace App\Services\Handlers;
 use App\DTO\UpdateContext;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
+use App\Services\MessageService;
 use App\Services\SenderService;
-use App\Services\TextMessagesService;
 
 readonly class CommandsHandler
 {
     public function __construct(
         private AdvPostingFlow $flow,
         private LoggerService $logger,
-        private SenderService $sender
+        private SenderService $sender,
+        private MessageService $messageService,
     ) {}
 
     /**
@@ -29,7 +30,7 @@ readonly class CommandsHandler
                 break;
             default:
                 $this->logger->info('User send unknown command', ['chat_id' => $context->chatId, 'text' => $context->text]);
-                $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getUnknownCommandMessage());
+                $this->sender->sendOrEditMessage($context->chatId, $this->messageService->getUnknownCommandMessage());
         }
     }
 }

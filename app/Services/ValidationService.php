@@ -9,6 +9,10 @@ namespace App\Services;
  */
 class ValidationService
 {
+    public function __construct(
+        private MessageService $messageService,
+    ) {}
+
     private const MAX_DESCRIPTION_LENGTH = 1000;
 
     private const MAX_TEXT_LENGTH = 100;
@@ -33,7 +37,7 @@ class ValidationService
 
         return [
             'result' => $resultValidate,
-            'message' => TextMessagesService::getCorrectCarYearMessage(),
+            'message' => $this->messageService->getCorrectCarYearMessage(),
         ];
     }
 
@@ -44,7 +48,7 @@ class ValidationService
     {
         return [
             'result' => filter_var($price, FILTER_VALIDATE_INT) !== false && $price > 0,
-            'message' => TextMessagesService::getCorrectPriceMessage(),
+            'message' => $this->messageService->getCorrectPriceMessage(),
         ];
     }
 
@@ -53,7 +57,7 @@ class ValidationService
      */
     public function validateDescription(?string $description): array
     {
-        return $this->validateText($description, self::MAX_DESCRIPTION_LENGTH, TextMessagesService::getCorrectDescriptionMessage());
+        return $this->validateText($description, self::MAX_DESCRIPTION_LENGTH, $this->messageService->getCorrectDescriptionMessage());
     }
 
     /**
@@ -63,7 +67,7 @@ class ValidationService
     {
         return [
             'result' => ! empty($fileId),
-            'message' => TextMessagesService::getCorrectPhotoMessage(),
+            'message' => $this->messageService->getCorrectPhotoMessage(),
         ];
     }
 
@@ -72,7 +76,7 @@ class ValidationService
      */
     public function validateExtraContact(?string $text): array
     {
-        return $this->validateText($text, self::MAX_TEXT_LENGTH, TextMessagesService::getCorrectExtraContactMessage());
+        return $this->validateText($text, self::MAX_TEXT_LENGTH, $this->messageService->getCorrectExtraContactMessage());
     }
 
     /**
@@ -80,7 +84,7 @@ class ValidationService
      */
     public function validateTitle(?string $text): array
     {
-        return $this->validateText($text, self::MAX_TEXT_LENGTH, TextMessagesService::getCorrectTitleMessage());
+        return $this->validateText($text, self::MAX_TEXT_LENGTH, $this->messageService->getCorrectTitleMessage());
     }
 
     private function validateText(?string $text, int $maxLength, string $errorMessage): array

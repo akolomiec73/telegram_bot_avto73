@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Flow;
 
 use App\Services\LoggerService;
+use App\Services\MessageService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
-use App\Services\TextMessagesService;
 use App\Services\ValidationService;
 
 class AdvPostingFlow
@@ -24,7 +24,8 @@ class AdvPostingFlow
         LoggerService $logger,
         SenderService $senderMessage,
         RepositoryService $repository,
-        ValidationService $validator
+        ValidationService $validator,
+        private MessageService $messageService
     ) {
         $this->logger = $logger;
         $this->senderMessage = $senderMessage;
@@ -37,7 +38,7 @@ class AdvPostingFlow
      */
     public function sendWelcomeMessage(int $chatId, ?string $username, int $message_id, bool $isFirstMessage): void
     {
-        $textMessage = TextMessagesService::getStartMessage();
+        $textMessage = $this->messageService->getStartMessage();
         $text = $textMessage['text'];
         $keyboard = $textMessage['keyboard'];
         if ($isFirstMessage) {
@@ -59,19 +60,19 @@ class AdvPostingFlow
         if ($count_minutes >= 120) {
             $this->repository->updateUserDatePost($chatId, date('Y-m-d H:i:s'));
             $temp_adv_row = $this->repository->getAdvRow($chatId);
-            $text_adv = TextMessagesService::getFullAdvMessage($temp_adv_row, $user->username);
+            $text_adv = $this->messageService->getFullAdvMessage($temp_adv_row, $user->username);
             $this->senderMessage->sendPostInPublic($temp_adv_row->adv_photo, $text_adv);
             /*
              * тут будет логика отправки пользователям по фильтрам
              *
              */
-            $textMessage = TextMessagesService::getFinishMessage();
+            $textMessage = $this->messageService->getFinishMessage();
             $text = $textMessage['text'];
             $keyboard = $textMessage['keyboard'];
             $this->senderMessage->sendOrEditMessage($chatId, $text, null, $keyboard);
             $this->logger->debug('User successful post adv', ['chat_id' => $chatId, 'text_adv' => $text_adv]);
         } else {
-            $text = TextMessagesService::getTimeLimitMessage($count_minutes);
+            $text = $this->messageService->getTimeLimitMessage($count_minutes);
             $this->senderMessage->sendOrEditMessage($chatId, $text);
             $this->logger->debug('User have time limit to post', ['chat_id' => $chatId, 'last_date_post' => $user->date_send_add]);
         }

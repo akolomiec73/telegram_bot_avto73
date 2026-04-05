@@ -8,9 +8,9 @@ use App\Constant\UserStages;
 use App\DTO\UpdateContext;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
+use App\Services\MessageService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
-use App\Services\TextMessagesService;
 use App\Services\ValidationService;
 
 /**
@@ -24,7 +24,7 @@ readonly class TextHandler
      *  - next_stage: следующая стадия ('' — завершение)
      *  - field: поле в БД для сохранения
      *  - validator: метод валидации в ValidationService
-     *  - message: имя метода TextMessagesService для получения текста
+     *  - message: имя метода MessageService для получения текста
      *  - expect_photo: true если ожидается фото
      */
     private const STAGE_CONFIG = [
@@ -103,7 +103,7 @@ readonly class TextHandler
         private SenderService $sender,
         private ValidationService $validator,
         private RepositoryService $repository,
-        private TextMessagesService $textMessages,
+        private MessageService $messageService,
     ) {}
 
     /**
@@ -114,7 +114,7 @@ readonly class TextHandler
         $user = $this->repository->getUser($context->chatId);
         if ($user === null) {
             $this->logger->error('User not found', ['chat_id' => $context->chatId]);
-            $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getErrorMessage());
+            $this->sender->sendOrEditMessage($context->chatId, $this->messageService->getErrorMessage());
 
             return;
         }
@@ -129,7 +129,7 @@ readonly class TextHandler
             return;
         }
         $this->logger->debug('Unknown stage for user', ['chat_id' => $context->chatId, 'stage' => $user['stage']]);
-        $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::getUnknownCommandMessage());
+        $this->sender->sendOrEditMessage($context->chatId, $this->messageService->getUnknownCommandMessage());
     }
 
     /**
@@ -152,7 +152,7 @@ readonly class TextHandler
             return;
         }
         $this->repository->updateUser($context->chatId, $nextStage);
-        $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::{$config['message']}());
+        $this->sender->sendOrEditMessage($context->chatId, $this->messageService->{$config['message']}());
     }
 
     /**
@@ -210,12 +210,12 @@ readonly class TextHandler
 
         if ($nextStage === UserStages::SET_FILTER_PRICE_APPLY) {
             $this->repository->updateUser($context->chatId, $nextStage);
-            $finalMessage = $this->textMessages->getFilterListMessage($context->chatId);
+            $finalMessage = $this->messageService->getFilterListMessage($context->chatId);
             $this->sender->sendOrEditMessage($context->chatId, $finalMessage['text'], null, $finalMessage['keyboard']);
         } else {
             $this->repository->updateUser($context->chatId, $nextStage);
             if ($config['message'] !== null) {
-                $this->sender->sendOrEditMessage($context->chatId, TextMessagesService::{$config['message']}());
+                $this->sender->sendOrEditMessage($context->chatId, $this->messageService->{$config['message']}());
             }
         }
     }

@@ -10,9 +10,9 @@ use App\Constant\UserStages;
 use App\DTO\UpdateContext;
 use App\Services\Flow\AdvPostingFlow;
 use App\Services\LoggerService;
+use App\Services\MessageService;
 use App\Services\RepositoryService;
 use App\Services\SenderService;
-use App\Services\TextMessagesService;
 
 /**
  * Обработчик callback-запросов от кнопок.
@@ -39,7 +39,7 @@ readonly class CallbacksHandler
         private LoggerService $logger,
         private SenderService $sender,
         private RepositoryService $repository,
-        private TextMessagesService $textMessages
+        private MessageService $messageService
     ) {}
 
     /**
@@ -80,29 +80,29 @@ readonly class CallbacksHandler
     private function sendMessageToUser(string $callbackData, int $chatId, ?int $messageId): void
     {
         $textMessage = match ($callbackData) {
-            CallbackData::POST_ADV => TextMessagesService::getPostMessage(),
-            CallbackData::CATEGORY_CAR => TextMessagesService::getCategoryCarMessage(),
-            CallbackData::CATEGORY_DETAIL => TextMessagesService::getCategoryDetailMessage(),
-            CallbackData::CATEGORY_DETAIL_DETAIL => TextMessagesService::getCategoryDetailDetailMessage(),
-            CallbackData::CATEGORY_DETAIL_WHEELS => TextMessagesService::getCategoryDetailWheelsMessage(),
-            CallbackData::CATEGORY_DETAIL_AUDIO => TextMessagesService::getCategoryDetailAudioMessage(),
-            CallbackData::CATEGORY_DETAIL_TOOLS => TextMessagesService::getCategoryDetailToolsMessage(),
-            CallbackData::CATEGORY_DETAIL_OTHER => TextMessagesService::getCategoryDetailOthersMessage(),
-            CallbackData::SEARCH_ADV => TextMessagesService::getSearchMessage(),
+            CallbackData::POST_ADV => $this->messageService->getPostMessage(),
+            CallbackData::CATEGORY_CAR => $this->messageService->getCategoryCarMessage(),
+            CallbackData::CATEGORY_DETAIL => $this->messageService->getCategoryDetailMessage(),
+            CallbackData::CATEGORY_DETAIL_DETAIL => $this->messageService->getCategoryDetailDetailMessage(),
+            CallbackData::CATEGORY_DETAIL_WHEELS => $this->messageService->getCategoryDetailWheelsMessage(),
+            CallbackData::CATEGORY_DETAIL_AUDIO => $this->messageService->getCategoryDetailAudioMessage(),
+            CallbackData::CATEGORY_DETAIL_TOOLS => $this->messageService->getCategoryDetailToolsMessage(),
+            CallbackData::CATEGORY_DETAIL_OTHER => $this->messageService->getCategoryDetailOthersMessage(),
+            CallbackData::SEARCH_ADV => $this->messageService->getSearchMessage(),
             CallbackData::FILTER_ADD,
             CallbackData::FILTER_APPLY,
-            CallbackData::FILTER_STATUS => $this->textMessages->getFilterListMessage($chatId),
+            CallbackData::FILTER_STATUS => $this->messageService->getFilterListMessage($chatId),
             CallbackData::FILTER_CATEGORY,
             CallbackData::FILTER_CATEGORY_CAR,
-            CallbackData::FILTER_CATEGORY_DETAIL => $this->textMessages->getFilterCategoryMessage($chatId),
-            CallbackData::FILTER_PRICE => TextMessagesService::getFilterPriceMessage(),
+            CallbackData::FILTER_CATEGORY_DETAIL => $this->messageService->getFilterCategoryMessage($chatId),
+            CallbackData::FILTER_PRICE => $this->messageService->getFilterPriceMessage(),
             default => null,
         };
         if ($textMessage !== null) {
             $this->sender->sendOrEditMessage($chatId, $textMessage['text'], $messageId, $textMessage['keyboard']);
             $this->logger->debug('Handle callback to user', ['chat_id' => $chatId, 'button' => $callbackData]);
         } else {
-            $this->sender->sendOrEditMessage($chatId, TextMessagesService::getErrorMessage());
+            $this->sender->sendOrEditMessage($chatId, $this->messageService->getErrorMessage());
             $this->logger->warning('Unknown callback for user', ['chat_id' => $chatId, 'callbackQuery' => $callbackData]);
         }
     }
