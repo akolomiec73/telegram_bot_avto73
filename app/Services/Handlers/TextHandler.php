@@ -146,9 +146,9 @@ readonly class TextHandler
         $nextStage = $this->determineNextStage($stage, $config, $user);
         // Завершение публикации, если достигнут финал
         if ($nextStage === '') {
-            $this->repository->updateUser($context->chatId, $nextStage);
-            $this->flow->finishAdv($context->chatId);
-
+            if ($this->flow->finishAdv($context->chatId)) {
+                $this->repository->updateUser($context->chatId, $nextStage);
+            }
             return;
         }
         $this->repository->updateUser($context->chatId, $nextStage);
