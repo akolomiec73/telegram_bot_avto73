@@ -141,7 +141,7 @@ readonly class KeyboardBuilder
         ];
     }
 
-    public function getFilterListKeyboard(bool $filterStatus): ?array
+    public function getFilterListKeyboard(int $filterStatus): ?array
     {
         if ($filterStatus == 1) {
             $textButton = 'Выключить';
