@@ -152,7 +152,9 @@ readonly class TextHandler
             return;
         }
         $this->repository->updateUser($context->chatId, $nextStage);
-        $this->sender->sendOrEditMessage($context->chatId, $this->messageService->{$config['message']}());
+        if ($config['message'] !== null) {
+            $this->sender->sendOrEditMessage($context->chatId, $this->messageService->{$config['message']}());
+        }
     }
 
     /**
