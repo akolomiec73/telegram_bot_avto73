@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Repositories;
 
+use App\Constant\CategoryNames;
 use App\Models\BotUsers;
 use App\Models\TempAdvUser;
 use App\Models\UserFilters;
 use App\Repositories\Contracts\DatabaseRepositoryInterface;
 use App\Services\LoggerService;
+use Illuminate\Support\Collection;
 
 /**
  * Методы по работе с БД
@@ -197,6 +199,30 @@ readonly class DatabaseRepository implements DatabaseRepositoryInterface
             $this->logger->debug('DB updateFilterPrice', ['chat_id' => $chatId, 'column' => $column, 'value' => $value]);
         } catch (\Exception $e) {
             $this->logger->error('ERROR DB updateFilterPrice', ['error_text' => $e->getMessage(), 'chat_id' => $chatId, 'column' => $column, 'value' => $value]);
+        }
+    }
+
+    public function getUsersWithFilters(TempAdvUser $tempAdv): Collection
+    {
+        try {
+            if ($tempAdv->adv_category == CategoryNames::CAR) {
+                $filterCategory = 'filter_category_car';
+            } else {
+                $filterCategory = 'filter_category_detail';
+            }
+
+            return BotUsers::select('chat_id')
+                ->whereHas('userFilters', function ($query) use ($filterCategory, $tempAdv) {
+                    $query->where('filter_status', 1)
+                        ->where($filterCategory, 1)
+                        ->where('filter_price_min', '<=', $tempAdv->adv_price)
+                        ->where('filter_price_max', '>=', $tempAdv->adv_price);
+                })
+                ->get();
+        } catch (\Exception $e) {
+            $this->logger->error('ERROR DB getUsersWithFilters', ['error_text' => $e->getMessage()]);
+
+            return collect();
         }
     }
 }
