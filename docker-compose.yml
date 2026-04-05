@@ -59,7 +59,7 @@ services:
             dockerfile: Dockerfile
         container_name: telegram_bot_worker
         restart: unless-stopped
-        command: php artisan queue:work --queue=logs,default --tries=3 --sleep=3 --max-time=3600
+        command: php artisan queue:work --queue=logs,default,notification --tries=3 --sleep=3 --max-time=3600
         volumes:
             - .:/var/www/html
         networks:
