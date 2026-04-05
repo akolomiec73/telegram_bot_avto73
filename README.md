@@ -41,12 +41,16 @@
     * `CallbacksHandler.php` - Обработчик callback (нажатий на кнопки меню)
     * `CommandsHandler.php` - Обработчик команд (/start)
     * `TextHandler.php` - Обработчик текстовых сообщений
-  * `AdvValidationService.php` - Сервис кастомной валидации
+  * `Message/` - Текста сообщений
+    * `KeyboardBilder.php` - Клавиатуры 
+    * `MessageFormatter.php` - Динамические текста
+    * `MessageTemplates.php` - Статические текста
   * `LoggerService` - Сервис асинхронного логирования
   * `MainService.php` - Основной сервис для выбора обработчика
+  * `MessageService.php` - Фасад, объединяющий текста сообщений
   * `RepositoryService.php` - Сервис координации репозиториев
   * `SenderService.php` - Сервис отправки сообщений при помощи библиотеки Telegram Bot SDK
-  * `TextMessagesService.php` - Класс хранящий текста и клавиатуры 
+  * `ValidationService.php` - Сервис кастомной валидации
 * `Dockerfile` - готовый dockerfile для сборки
 * `docker-compose.yml` - настройка остальных контейнеров mysql, redis, nginx, ngrok, worker
 
