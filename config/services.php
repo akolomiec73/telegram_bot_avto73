@@ -39,6 +39,7 @@ return [
 
     'telegram' => [
         'public_group_id' => env('TELEGRAM_PUBLIC_GROUP_ID', '-1001692673051'),
+        'limit_to_public' => env('TIME_LIMIT_TO_PUBLIC'),
     ],
 
 ];

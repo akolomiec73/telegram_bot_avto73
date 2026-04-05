@@ -8,6 +8,7 @@ use App\Repositories\CacheRepository;
 use App\Repositories\Contracts\CacheRepositoryInterface;
 use App\Repositories\Contracts\DatabaseRepositoryInterface;
 use App\Repositories\DatabaseRepository;
+use App\Services\Flow\AdvPostingFlow;
 use App\Services\SenderService;
 use Illuminate\Support\ServiceProvider;
 
@@ -29,6 +30,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(SenderService::class)
             ->needs('$publicGroupId')
             ->give(config('services.telegram.public_group_id'));
+        $this->app->when(AdvPostingFlow::class)
+            ->needs('$timeLimitToPost')
+            ->give(config('services.telegram.limit_to_public'));
     }
 
     /**
