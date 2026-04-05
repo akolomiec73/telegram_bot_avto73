@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Flow;
 
+use App\Jobs\NotificationJob;
 use App\Services\LoggerService;
 use App\Services\MessageService;
 use App\Services\RepositoryService;
@@ -42,22 +43,21 @@ readonly class AdvPostingFlow
         $user = $this->repository->getUserDatePost($chatId);
         $count_minutes = $this->getCountMinutes($user->date_send_add);
         if ($count_minutes >= $this->timeLimitToPost) {
-            $temp_adv_row = $this->repository->getAdvRow($chatId);
-            $text_adv = $this->messageService->getFullAdvMessage($temp_adv_row, $user->username);
-            $this->senderMessage->sendPostInPublic($temp_adv_row->adv_photo, $text_adv);
+            $tempAdvRow = $this->repository->getAdvRow($chatId);
+            $textAdv = $this->messageService->getFullAdvMessage($tempAdvRow, $user->username);
+            $this->senderMessage->sendPostInPublic($tempAdvRow->adv_photo, $textAdv);
             $this->repository->updateUserDatePost($chatId, date('Y-m-d H:i:s'));
-            /*
-             * тут будет логика отправки пользователям по фильтрам
-             *
-             */
+            dispatch(new NotificationJob($tempAdvRow, $textAdv))->onQueue('notification');
             $textMessage = $this->messageService->getFinishMessage();
             $this->senderMessage->sendOrEditMessage($chatId, $textMessage['text'], null, $textMessage['keyboard']);
-            $this->logger->debug('User successful post adv', ['chat_id' => $chatId, 'text_adv' => $text_adv]);
+            $this->logger->debug('User successful post adv', ['chat_id' => $chatId, 'text_adv' => $textAdv]);
+
             return true;
         } else {
             $text = $this->messageService->getTimeLimitMessage($count_minutes);
             $this->senderMessage->sendOrEditMessage($chatId, $text);
             $this->logger->debug('User have time limit to post', ['chat_id' => $chatId, 'last_date_post' => $user->date_send_add]);
+
             return false;
         }
     }
