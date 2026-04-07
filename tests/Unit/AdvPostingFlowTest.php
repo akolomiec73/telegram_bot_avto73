@@ -191,6 +191,8 @@ class AdvPostingFlowTest extends TestCase
         $this->loggerMock->expects(self::once())
             ->method('debug');
 
+        $this->repositoryMock->expects(self::never())->method('updateUserDatePost');
+
         $result = $this->flow->finishAdv($chatId);
         $this->assertFalse($result);
     }
